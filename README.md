@@ -60,11 +60,16 @@ This Bot track any post made by GameDevs from **30+** games, and let you follow 
 
 ## Getting Started
 
-Click the button below to add DevTracker to your server
+### DISCLAMER:
+> This bot is currently **BETA**, expects bugs but more importantly, report them [here](https://github.com/s0me-1/devtracker-bot/issues)/
+
+### Installation
+
+**Click the button below** to add **DevTracker** to your server.
 
 [![](https://i33.servimg.com/u/f33/11/20/17/41/invite10.png)](https://discord.com/api/oauth2/authorize?client_id=982257201211138050&permissions=274877958144&scope=applications.commands%20bot)
 
-
+## Commands
 
 Each Slash Command has **autofillers** to help you.
 
@@ -121,4 +126,8 @@ $ docker-compose up -d
 ```
 
 ## Credits
-- [@kokarn](https://github.com/kokarn) - Main Dev, [DeveloperTracker.com](https://developertracker.com/).
+- [@kokarn](https://github.com/kokarn) - Main Dev of [DeveloperTracker.com](https://developertracker.com/).
+- [Disnake](https://github.com/DisnakeDev/disnake) - Discord API Wrapper for Python.
+
+## License
+[GPL v3](https://github.com/s0me-1/devtracker-bot/blob/master/LICENSE)

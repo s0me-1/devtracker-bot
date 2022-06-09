@@ -1,13 +1,25 @@
 version: "3"
 services:
-    devtracker-bot:
-        image: "s0me-1:devtracker-bot"
-        build:
-            context: "."
-            dockerfile: "Dockerfile"
-        command: ["python", "bot.py"]
-        env_file:
-        - .env
-        restart: always
-        volumes:
-        - "./tracking.db:/tracking.db:rw"
+  devtracker-bot:
+    image: "s0me-1:devtracker-bot"
+    build:
+      context: "."
+      dockerfile: "Dockerfile"
+    command: ["python", "bot.py"]
+    env_file:
+      - .env
+    restart: always
+    volumes:
+      - "./tracking.db:/tracking.db:rw"
+    secrets:
+      - bot_token
+      - api_token
+      - api_base
+
+secrets:
+  bot_token:
+    file: bot_token.sec
+  api_token:
+    file: api_token.sec
+  api_base:
+    file: api_base.sec

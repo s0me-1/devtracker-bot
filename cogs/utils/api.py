@@ -1,13 +1,10 @@
-import os
-import json
 import logging
 
+import sec
 import requests
 import requests_cache
 requests_cache.install_cache('api_cache', backend='sqlite', expire_after=180)
 
-from dotenv import load_dotenv
-load_dotenv()
 
 from cogs.utils import database as db
 ORM = db.ORM()
@@ -19,8 +16,9 @@ class API:
     _instances = {}
 
     def __init__(self):
-        self.headers = {'Authorization': f'Bearer {os.environ["API_TOKEN"]}'}
-        self.api_baseurl = os.environ["API_BASE"]
+        token = sec.load('api_token')
+        self.headers = {'Authorization': f'Bearer {token}'}
+        self.api_baseurl =  sec.load('api_base')
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:

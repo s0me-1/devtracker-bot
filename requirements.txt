@@ -1,6 +1,5 @@
 disnake
 requests
 requests-cache
-python-dotenv
 bs4
 markdownify

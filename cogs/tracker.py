@@ -7,9 +7,6 @@ from bs4 import BeautifulSoup, NavigableString
 import disnake
 from disnake.ext import tasks, commands
 
-import os
-from dotenv import load_dotenv
-
 from cogs.utils.services import CUSTOMIZERS
 from cogs.utils import autocompleters as ac
 from cogs.utils import mardownify_discord as md
@@ -17,9 +14,6 @@ from cogs.utils import database as db
 from cogs.utils import api
 ORM = db.ORM()
 API = api.API()
-
-load_dotenv()
-DEBUG_GUILD_ID = int(os.environ['DEBUG_GUILD_ID'])
 
 
 # Enforced by the Discord API
@@ -218,7 +212,7 @@ class Tracker(commands.Cog):
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : Unset custom channel for `{game}`')
             await inter.response.send_message(f"The notification channel for `{game}` is no longer set.")
 
-    @commands.slash_command(name="dt-force-send-post", description="[TECHNICAL] Debug bad formatted messages.", guild_ids=[DEBUG_GUILD_ID])
+    @commands.slash_command(name="dt-force-send-post", description="[TECHNICAL] Debug bad formatted messages.", guild_ids=[687999396612407341])
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
     async def force_fetch_last_post(self, inter, post_id: str, game: str = commands.Param(autocomplete=ac.games)):
 
@@ -364,7 +358,7 @@ class Tracker(commands.Cog):
         acc_dev_group = post['account']['developer']['group']
 
         author_text = f'{acc_dev_nick} [{acc_dev_group}]' if acc_dev_group else f'{acc_dev_nick}'
-        footer_text = f"Account: {acc_id} | DTID #{post['id']}"
+        footer_text = f"Account: {acc_id} | DT#: {post['id']}"
 
         footer_icon_url = "https://developertracker.com/star-citizen/favicon-32x32.png"
         field_topic = f"[{post['topic']}]({post['url']})"

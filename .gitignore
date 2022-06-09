@@ -103,6 +103,7 @@ celerybeat.pid
 
 # Environments
 .env
+.envrc
 .venv
 env/
 venv/
@@ -137,3 +138,4 @@ fetch_post*.py
 
 # Docker
 *.override.yml
+*.sec

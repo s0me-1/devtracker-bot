@@ -52,10 +52,9 @@ class Settings(commands.Cog):
         acc_tab = self._generate_ignored_acc_table(ignored_accounts)
         api_status_code = API.get_status()
         emoji = "✅" if api_status_code == 200 else "❌"
-        api_status = f"API Status - ✅ ({api_status_code})"
+        api_status = f"API Status - {emoji} ({api_status_code})"
 
-        description = "You'll find the settings currently saved below. " \
-            "Check our [Discord server](https://discord.gg/PAFjspJN²) or [Github](https://github.com/s0me-1/sc-devtracker) " \
+        description = "Need help ? Check the [Github](https://github.com/s0me-1/devtracker) page\n" \
             "if you need any help.\n" +  u'\u200B'
 
         emb = disnake.Embed(

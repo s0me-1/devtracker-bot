@@ -18,45 +18,45 @@ This Bot track any post made by GameDevs from **30+** games, and let you follow 
 - Ignore posts from specific GameDevs
 
 ### Supported Games
- - ARK: Survival Evolved
- - Battlefield 1
- - Conan: Exiles
- - Counter Strike: Global Offensive
- - Destiny 2
- - Elite: Dangerous
- - PLAYERUNKNOWN'S BATTLEGROUNDS
- - Rainbow 6: Siege
- - RimWorld
- - Anthem
- - Fortnite
- - They Are Billions
- - Escape from Tarkov
- - Star Citizen
- - Darwin Project
- - Rocket League
- - Path of Exile
- - Sea of Thieves
- - Stonehearth
- - It Lurks Below
- - Hearthstone
- - DayZ
- - Realm Royale
- - Magic: The Gathering Arena
- - Space Haven
- - Satisfactory
- - Dwarf Fortress
- - Dead Matter
- - Oxygen Not Included
- - Dyson Sphere Program
- - Valheim
- - Going Medieval
- - Starbase
- - Icarus
- - Core Keeper
- - The Cycle: Frontier
- - Marauders
- - The Planet Crafter
- - V Rising
+- ARK: Survival Evolved
+- Anthem
+- Battlefield 1
+- Conan: Exiles
+- Core Keeper
+- Counter Strike: Global Offensive
+- Darwin Project
+- DayZ
+- Dead Matter
+- Destiny 2
+- Dwarf Fortress
+- Dyson Sphere Program
+- Elite: Dangerous
+- Escape from Tarkov
+- Fortnite
+- Going Medieval
+- Hearthstone
+- Icarus
+- It Lurks Below
+- Magic: The Gathering Arena
+- Marauders
+- Oxygen Not Included
+- PLAYERUNKNOWN'S BATTLEGROUNDS
+- Path of Exile
+- Rainbow 6: Siege
+- Realm Royale
+- RimWorld
+- Rocket League
+- Satisfactory
+- Sea of Thieves
+- Space Haven
+- Star Citizen
+- Starbase
+- Stonehearth
+- The Cycle: Frontier
+- The Planet Crafter
+- They Are Billions
+- V Rising
+- Valheim
 
 ## Getting Started
 

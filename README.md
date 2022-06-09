@@ -62,7 +62,9 @@ This Bot track any post made by GameDevs from **30+** games, and let you follow 
 
 Click the button below to add DevTracker to your server
 
-<button class="btn btn-primary" onclick="https://discord.com/api/oauth2/authorize?client_id=982257201211138050&permissions=274877958144&scope=applications.commands%20bot">Invite DevTracker</button>
+[![](https://i33.servimg.com/u/f33/11/20/17/41/invite10.png)](https://discord.com/api/oauth2/authorize?client_id=982257201211138050&permissions=274877958144&scope=applications.commands%20bot)
+
+
 
 Each Slash Command has **autofillers** to help you.
 

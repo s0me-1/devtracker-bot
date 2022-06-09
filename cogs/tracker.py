@@ -7,6 +7,9 @@ from bs4 import BeautifulSoup, NavigableString
 import disnake
 from disnake.ext import tasks, commands
 
+import os
+from dotenv import load_dotenv
+
 from cogs.utils.services import CUSTOMIZERS
 from cogs.utils import autocompleters as ac
 from cogs.utils import mardownify_discord as md
@@ -15,8 +18,6 @@ from cogs.utils import api
 ORM = db.ORM()
 API = api.API()
 
-import os
-from dotenv import load_dotenv
 load_dotenv()
 DEBUG_GUILD_ID = int(os.environ['DEBUG_GUILD_ID'])
 
@@ -40,7 +41,6 @@ class Tracker(commands.Cog):
         self.resfresh_posts.cancel()
         ORM.close_connection()
         logger.info('Unloaded.')
-
 
     # ---------------------------------------------------------------------------------
     # TASKS
@@ -109,7 +109,6 @@ class Tracker(commands.Cog):
         logger.info('Waiting before launching refresh tasks...')
         await self.bot.wait_until_ready()
 
-
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS
     # ---------------------------------------------------------------------------------
@@ -134,7 +133,7 @@ class Tracker(commands.Cog):
             if channel_id:
                 msg += f" I'll post new entries in <#{channel_id}>"
             else:
-                msg += f" Please use `/dt-set-channel` to receive the latest posts."
+                msg += " Please use `/dt-set-channel` to receive the latest posts."
             await inter.response.send_message(msg)
 
             # Restart Tracker main task to fetch first new post
@@ -173,7 +172,6 @@ class Tracker(commands.Cog):
 
             # Restart Tracker main task to fetch first new post
             self.resfresh_posts.restart()
-
 
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS
@@ -222,7 +220,7 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-force-send-post", description="[TECHNICAL] Debug bad formatted messages.", guild_ids=[DEBUG_GUILD_ID])
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def force_fetch_last_post(self, inter, post_id: str , game: str = commands.Param(autocomplete=ac.games)):
+    async def force_fetch_last_post(self, inter, post_id: str, game: str = commands.Param(autocomplete=ac.games)):
 
         logger.info(f'Forcing fetch of {post_id}.')
         game_ids = API.fetch_available_games()
@@ -238,8 +236,6 @@ class Tracker(commands.Cog):
             else:
                 em = self._generate_embed(post[0])
                 await inter.response.send_message(embed=em)
-
-
 
     # ---------------------------------------------------------------------------------
     # HELPERS
@@ -271,14 +267,12 @@ class Tracker(commands.Cog):
             for quoteauthor in soup.find_all('div', {'class': 'quoteauthor'}):
                 quoteauthor.insert_after(soup.new_tag("br"))
                 quoteauthor.insert_after(soup.new_tag("br"))
-                quoteauthor.insert_after(":")
 
         # Fix blockquote from Reddit
-        if origin == 'Reddit':
+        if origin in ['Reddit', 'Steam']:
             for quoteauthor in soup.find_all('div', {'class': 'bb_quoteauthor'}):
                 quoteauthor.insert_after(soup.new_tag("br"))
                 quoteauthor.insert_after(soup.new_tag("br"))
-                quoteauthor.insert_after(":")
 
         # Fix blockquote from Twitter
         if origin == 'Twitter':
@@ -287,7 +281,6 @@ class Tracker(commands.Cog):
                 quoteauthor.insert_after(soup.new_tag("br"))
                 quoteauthor.insert_after(soup.new_tag("br"))
                 quoteauthor.insert_before("Originally posted by ")
-                quoteauthor.insert_after(" :")
 
         # Ellipsising Blocquotes
         bqs = soup.find_all('blockquote')
@@ -301,6 +294,15 @@ class Tracker(commands.Cog):
                 bq = bqs[i]
                 init_bq_size = len(bq.text)
                 bq_ps = bq.findAll('p')
+
+                if len(bq_ps) < 2 and len(bqs) > 1:
+                    bqs[-1].decompose()
+                    if len(bqs) > 2:
+                        ellipsis = soup.new_tag('blockquote')
+                        ellipsis.string = '[...]'
+                        bqs[-2].insert_after(ellipsis)
+                    nb_char_stripped += init_bq_size - len(bqs[-1].text)
+                    continue
 
                 ellipsis = soup.new_tag('p')
                 ellipsis.string = '[...]'
@@ -340,17 +342,14 @@ class Tracker(commands.Cog):
             body_trimmed = re.sub(r'\n>\s*\n>\s*\n>\s*\n>', '\n> \n> ', body_trimmed)
         body_trimmed = re.sub(r'\n>\s*\n>\s*\n>', '\n> \n> ', body_trimmed)
 
-
-
         description = (body_trimmed[:2040] + '...') if len(body_trimmed) > 2045 else body_trimmed
 
         img_url = None
         img = soup.find('img')
         if img:
-           img_url = img['src']
+            img_url = img['src']
 
         return description, img_url
-
 
     def _generate_embed(self, post):
 
@@ -359,7 +358,14 @@ class Tracker(commands.Cog):
         description, img_url = self._sanitize_post_content(post['content'], origin=service)
         color = CUSTOMIZERS[service]['color']
         author_icon_url = CUSTOMIZERS[service]['icon_url']
-        author_name = post['account']['identifier']
+
+        acc_id = post['account']['identifier']
+        acc_dev_nick = post['account']['developer']['nick']
+        acc_dev_group = post['account']['developer']['group']
+
+        author_text = f'{acc_dev_nick} [{acc_dev_group}]' if acc_dev_group else f'{acc_dev_nick}'
+        footer_text = f"Account: {acc_id} | DTID #{post['id']}"
+
         footer_icon_url = "https://developertracker.com/star-citizen/favicon-32x32.png"
         field_topic = f"[{post['topic']}]({post['url']})"
         field_published = f"{str(datetime.fromtimestamp(post['timestamp']))} (UTC)"
@@ -369,8 +375,8 @@ class Tracker(commands.Cog):
             color=color
         )
 
-        emb.set_author(name=author_name, icon_url=author_icon_url)
-        emb.set_footer(text=f"DeveloperTracker [{post['id']}]", icon_url=footer_icon_url)
+        emb.set_author(name=author_text, icon_url=author_icon_url)
+        emb.set_footer(text=footer_text, icon_url=footer_icon_url)
         emb.add_field(name='Topic', value=field_topic, inline=True)
         emb.add_field(name='Published', value=field_published, inline=True)
 

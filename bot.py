@@ -9,6 +9,9 @@ logger = logging.getLogger('bot')
 logger.setLevel(logging.INFO)
 
 intents = disnake.Intents(guilds=True, messages=True)
+
+# Use sync_commands_debug if you have trouble syncing commands
+# bot = commands.InteractionBot(intents=intents, sync_commands_debug=True, test_guilds=[DEBUG_GUILD_ID])
 bot = commands.InteractionBot(intents=intents)
 
 

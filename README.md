@@ -17,6 +17,8 @@ This Bot track any post made by GameDevs from **30+** games, and let you follow 
 - Set a specific channel per followed game if desired.
 - Ignore posts from specific GameDevs
 
+![DevTracker Post Example Steam](https://i.imgur.com/506lKDV.png)
+
 ### Supported Games
 - ARK: Survival Evolved
 - Anthem

@@ -1,0 +1,13 @@
+version: "3"
+services:
+    devtracker-bot:
+        image: "s0me-1:devtracker-bot"
+        build:
+            context: "."
+            dockerfile: "Dockerfile"
+        command: ["python", "bot.py"]
+        env_file:
+        - .env
+        restart: always
+        volumes:
+        - "./tracking.db:/tracking.db:rw"

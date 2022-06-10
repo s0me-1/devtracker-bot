@@ -152,10 +152,16 @@ class Tracker(commands.Cog):
         ORM.set_main_channel(channel.id, inter.guild_id)
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as default channel')
 
-        await inter.response.send_message(
-            f"<#{channel.id}> set as default channel.\n" \
-            "Please make sure I have the permission to send messages in this channel."
-        )
+        msg = f"<#{channel.id}> set as default channel.\n"
+
+        bot_member = inter.guild.get_member(self.bot.user.id)
+        perms = channel.permissions_for(bot_member)
+
+        if not perms.view_channel:
+            msg += "It seems I'm not allowed to view this channel, please check my permissions."
+        elif not perms.send_messages:
+            msg += "It seems I'm not allowed to send message in this channel, please check my permissions."
+        await inter.response.send_message(msg)
 
     @set_channel.sub_command(name="game", description="Set the notification channel per game. The game will be followed if it's not the case already.")
     async def set_game_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel, game: str = commands.Param(autocomplete=ac.games)):
@@ -173,10 +179,17 @@ class Tracker(commands.Cog):
                 ORM.add_fw_game_channel(channel.id, inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as channel for `{game}`')
 
-            await inter.response.send_message(
-                f"<#{channel.id}> set as notification channel for `{game}`.\n" \
-                "Please make sure I have the permissions to send in this channel."
-            )
+            msg = f"<#{channel.id}> set as notification channel for `{game}`.\n"
+
+            bot_member = inter.guild.get_member(self.bot.user.id)
+            perms = channel.permissions_for(bot_member)
+
+            if not perms.view_channel:
+                msg += "It seems I'm not allowed to view this channel, please check my permissions."
+            elif not perms.send_messages:
+                msg += "It seems I'm not allowed to send message in this channel, please check my permissions."
+
+            await inter.response.send_message(msg)
 
             # Restart Tracker main task to fetch first new post
             self.resfresh_posts.restart()

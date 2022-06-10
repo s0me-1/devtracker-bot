@@ -53,7 +53,7 @@ class Tracker(commands.Cog):
 
         all_ignored_accounts = ORM.get_all_ignored_accounts()
 
-        for id, last_post_id, channel_id, guild_id, game_id in ordered_fws:
+        for last_post_id, channel_id, guild_id, game_id in ordered_fws:
             if not guild or guild.id != guild_id:
                 default_channel_id = ORM.get_main_channel(guild_id)
                 guild = self.bot.get_guild(guild_id)
@@ -254,7 +254,7 @@ class Tracker(commands.Cog):
         follows = ORM.get_all_follows()
 
         # Minimize calls on DBs/Disnake per guilds
-        return sorted(follows, key=lambda fw: fw[3])
+        return sorted(follows, key=lambda fw: fw[2])
 
     def _fetch_posts(self):
         posts = defaultdict(dict)

@@ -17,13 +17,13 @@ def initialize():
         ''')
         conn.execute('''
             CREATE TABLE IF NOT EXISTS follows (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 last_post_id NVARCHAR,
                 channel_id INTEGER,
                 follower_guild_id INTEGER NOT NULL,
                 followed_game_id NVARCHAR NOT NULL,
                 FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE,
-                FOREIGN KEY (followed_game_id) REFERENCES games (id) ON DELETE CASCADE
+                FOREIGN KEY (followed_game_id) REFERENCES games (id) ON DELETE CASCADE,
+                PRIMARY KEY (follower_guild_id, followed_game_id)
             );
         ''')
         conn.execute('''
@@ -34,10 +34,10 @@ def initialize():
         ''')
         conn.execute('''
             CREATE TABLE IF NOT EXISTS ignored_accounts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 account_id NVARCHAR NOT NULL,
                 follower_guild_id NOT NULL,
                 FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE
+                PRIMARY KEY (account_id, follower_guild_id)
             );
         ''')
 
@@ -58,7 +58,7 @@ class ORM:
 
     def add_guild(self, guild_id):
         with self.conn as conn:
-            conn.execute("INSERT INTO guilds ('id', 'main_channel_id') VALUES (?, ?);", (guild_id, None))
+            conn.execute("INSERT OR IGNORE INTO guilds ('id', 'main_channel_id') VALUES (?, ?);", (guild_id, None))
 
     def rm_guild(self, guild_id):
         with self.conn as conn:
@@ -71,7 +71,7 @@ class ORM:
 
     def add_followed_game(self, game_id, guild_id):
         with self.conn as conn:
-            conn.execute("INSERT INTO follows ('last_post_id', 'channel_id', 'follower_guild_id', 'followed_game_id' ) VALUES (?, ?, ?, ?);", (None, None, guild_id, game_id))
+            conn.execute("INSERT OR IGNORE INTO follows ('last_post_id', 'channel_id', 'follower_guild_id', 'followed_game_id' ) VALUES (?, ?, ?, ?);", (None, None, guild_id, game_id))
 
     def rm_followed_game(self, game_id, guild_id):
         with self.conn as conn:
@@ -134,7 +134,7 @@ class ORM:
 
     def add_fw_game_channel(self, channel_id, guild_id, game_id):
         with self.conn as conn:
-            conn.execute("INSERT INTO follows ('last_post_id', 'channel_id', 'follower_guild_id', 'followed_game_id' ) VALUES (?, ?, ?, ?);", (None, channel_id, guild_id, game_id))
+            conn.execute("INSERT OR IGNORE INTO follows ('last_post_id', 'channel_id', 'follower_guild_id', 'followed_game_id' ) VALUES (?, ?, ?, ?);", (None, channel_id, guild_id, game_id))
 
     def unset_game_channel(self, guild_id, game_id):
         with self.conn as conn:
@@ -173,7 +173,7 @@ class ORM:
             to_add = api_games_ids.difference(db_games_ids)
             to_add = [game for game in api_games if game[0] in to_add]
             if to_add:
-                conn.executemany("INSERT INTO games ('id', 'name') VALUES (?, ?);", to_add)
+                conn.executemany("INSERT OR IGNORE INTO games ('id', 'name') VALUES (?, ?);", to_add)
 
     def get_all_followed_games(self):
         with self.conn as conn:
@@ -199,7 +199,7 @@ class ORM:
 
     def add_ignored_account(self, guild_id, account_id):
         with self.conn as conn:
-            conn.execute("INSERT INTO ignored_accounts ('account_id', 'follower_guild_id') VALUES (?, ?);", (account_id, guild_id))
+            conn.execute("INSERT OR IGNORE INTO ignored_accounts ('account_id', 'follower_guild_id') VALUES (?, ?);", (account_id, guild_id))
 
     def get_ignored_accounts(self, guild_id):
         with self.conn as conn:

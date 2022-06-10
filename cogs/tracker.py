@@ -175,8 +175,7 @@ class Tracker(commands.Cog):
 
             await inter.response.send_message(
                 f"<#{channel.id}> set as notification channel for `{game}`.\n" \
-                "You should receive the last post in a few moments," \
-                "otherwise make sure I have the permissions to send in this channel"
+                "Please make sure I have the permissions to send in this channel."
             )
 
             # Restart Tracker main task to fetch first new post

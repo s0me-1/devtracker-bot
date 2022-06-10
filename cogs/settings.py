@@ -54,7 +54,7 @@ class Settings(commands.Cog):
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
 
-        description = "Need help ? Check the [Github](https://github.com/s0me-1/devtracker) page\n" \
+        description = "Check the [Github](https://github.com/s0me-1/devtracker) page\n" \
             "if you need any help.\n" +  u'\u200B'
 
         emb = disnake.Embed(

@@ -2,4 +2,5 @@ disnake
 requests
 requests-cache
 bs4
+sec
 markdownify

@@ -63,7 +63,7 @@ This Bot track any post made by GameDevs from **30+** games, and let you follow 
 ## Getting Started
 
 ### DISCLAMER:
-> This bot is currently **BETA**, expects bugs but more importantly, report them [here](https://github.com/s0me-1/devtracker-bot/issues)/
+> This bot is currently **BETA**, expects bugs but more importantly, report them [here](https://github.com/s0me-1/devtracker-bot/issues).
 
 ### Installation
 
@@ -105,7 +105,10 @@ You'll find the account ID in the footer of each post
 ## Self-Hosting
 
 This Bot relies on the **DeveloperTracker API** that can be found [here](https://github.com/post-tracker/rest-api).
-Once you have your credentials, fill the `example.env` file and rename it into `.env`.
+
+Once you have your credentials, you can either:
+- Fill the `example.env` file and rename it into `.env`.
+- Use `docker-compose.yml` with [Docker Secrets](https://docs.docker.com/engine/swarm/secrets/).
 
 You can then launch the bot as described below:
 

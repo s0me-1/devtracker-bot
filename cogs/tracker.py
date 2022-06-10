@@ -96,7 +96,15 @@ class Tracker(commands.Cog):
             post_id = posts[game_id][0]['id']
             ORM.set_last_post(post_id, guild_id, game_id)
             if embeds:
-                await channel.send(embeds=embeds)
+                try:
+                    await channel.send(embeds=embeds)
+                except disnake.Forbidden:
+                    logger.warning(f"Missing permissions for #{channel.name}")
+                    if default_channel_id and default_channel_id != channel.id:
+                        default_channel = guild.get_channel(default_channel_id)
+                        await default_channel.send(
+                            f"I cant send the latest post for {game_id} in {channel.name}"
+                        )
 
     @resfresh_posts.before_loop
     async def before_refresh(self):
@@ -144,7 +152,10 @@ class Tracker(commands.Cog):
         ORM.set_main_channel(channel.id, inter.guild_id)
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as default channel')
 
-        await inter.response.send_message(f"<#{channel.id}> set as default channel for any followed games.")
+        await inter.response.send_message(
+            f"<#{channel.id}> set as default channel.\n" \
+            "Please make sure I have the permission to send messages in this channel."
+        )
 
     @set_channel.sub_command(name="game", description="Set the notification channel per game. The game will be followed if it's not the case already.")
     async def set_game_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel, game: str = commands.Param(autocomplete=ac.games)):
@@ -162,7 +173,11 @@ class Tracker(commands.Cog):
                 ORM.add_fw_game_channel(channel.id, inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as channel for `{game}`')
 
-            await inter.response.send_message(f"<#{channel.id}> set as notification channel for `{game}`.")
+            await inter.response.send_message(
+                f"<#{channel.id}> set as notification channel for `{game}`.\n" \
+                "You should receive the last post in a few moments," \
+                "otherwise make sure I have the permissions to send in this channel"
+            )
 
             # Restart Tracker main task to fetch first new post
             self.resfresh_posts.restart()

@@ -189,7 +189,7 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-unfollow", description="Remove a game to the following list")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def unfollow_game(self, inter, game: str = commands.Param(autocomplete=ac.games)):
+    async def unfollow_game(self, inter, game: str = commands.Param(autocomplete=ac.games_fw)):
 
         local_games = ORM.get_local_games()
         game_id = [g[0] for g in local_games if g[1] == game][0]

@@ -175,6 +175,17 @@ class ORM:
             if to_add:
                 conn.executemany("INSERT OR IGNORE INTO games ('id', 'name') VALUES (?, ?);", to_add)
 
+    def get_followed_games(self, guild_id):
+        with self.conn as conn:
+
+            followed_games_ids = {}
+            for row in conn.execute("SELECT g.name,g.id FROM games AS g INNER JOIN follows AS fw ON g.id = fw.followed_game_id WHERE fw.follower_guild_id = ? ;", (guild_id,)):
+                followed_games_ids.update({
+                    row[0] : row[1]
+                })
+
+            return followed_games_ids
+
     def get_all_followed_games(self):
         with self.conn as conn:
 

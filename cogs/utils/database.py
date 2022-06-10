@@ -85,7 +85,7 @@ class ORM:
     def get_follow_status(self, guild_id):
         with self.conn as conn:
             game_names = []
-            for row in conn.execute("SELECT g.name,fw.channel_id FROM games AS g INNER JOIN follows AS fw ON g.id = fw.followed_game_id WHERE fw.follower_guild_id = ? ;", (guild_id,)):
+            for row in conn.execute("SELECT g.name,fw.channel_id,fw.last_post_id FROM games AS g INNER JOIN follows AS fw ON g.id = fw.followed_game_id WHERE fw.follower_guild_id = ? ;", (guild_id,)):
                 game_names.append(tuple(row))
             return game_names
 

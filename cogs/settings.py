@@ -108,13 +108,13 @@ class Settings(commands.Cog):
 
         max_fw = max(fw_status,key=lambda fw: len(fw[0]))
         lg = len(max_fw[0])
-        for gname, game_ch_id in fw_status:
+        for gname, game_ch_id, last_post_id in fw_status:
             fw_line = ''
             offset = lg - len(gname)
             fw_line += f"`{gname}"
             fw_line += " "*offset
             if game_ch_id:
-                fw_line += f"`  |  <#{game_ch_id}>\n"
+                fw_line += f"`  |  <#{game_ch_id}> - {last_post_id}\n"
             else:
                  fw_line += f"` |  \n"
             fw_tab += fw_line

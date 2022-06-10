@@ -238,7 +238,8 @@ class Tracker(commands.Cog):
             game_id = game_ids[game]
             post = API.fetch_post(post_id, game_id)
 
-            print(post)
+            soup = BeautifulSoup(post, "html.parser")
+            logger.info(soup.prettify())
             if len(post) == 0:
                 await inter.response.send_message(f"`{post_id}` not found.")
             else:

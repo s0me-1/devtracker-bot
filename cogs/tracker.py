@@ -33,8 +33,15 @@ class Tracker(commands.Cog):
 
     def cog_unload(self):
         self.resfresh_posts.cancel()
-        ORM.close_connection()
         logger.info('Unloaded.')
+
+    # ---------------------------------------------------------------------------------
+    # LISTENERS
+    # ---------------------------------------------------------------------------------
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        logger.info("DevTracker has landed.")
 
     # ---------------------------------------------------------------------------------
     # TASKS

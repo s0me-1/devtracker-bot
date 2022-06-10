@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger('bot.DB')
 
-DB_FILE = 'tracking.db'
+DB_FILE = 'db/tracking.db'
 
 
 def initialize():

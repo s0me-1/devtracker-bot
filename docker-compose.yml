@@ -10,7 +10,7 @@ services:
       - .env
     restart: always
     volumes:
-      - "./tracking.db:/tracking.db:rw"
+      - "./db:/db"
     secrets:
       - bot_token
       - api_token

@@ -30,7 +30,7 @@ class DiscordMarkdownConverted(MarkdownConverter):
         empty <p> are used as new line in sources HTML
         """
         if convert_as_inline:
-            return text
+            return text + '\n'
         if self.options['wrap']:
             text = fill(text,
                         width=self.options['wrap_width'],

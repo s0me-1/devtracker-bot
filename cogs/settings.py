@@ -23,7 +23,7 @@ class Settings(commands.Cog):
     # APPLICATION COMMANDS
     # ---------------------------------------------------------------------------------
 
-    @commands.slash_command(name="dt-status", description="See current configuration.")
+    @commands.slash_command(name="dt-status", description="See the current configuration of this server.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
     async def status(self, inter : disnake.ApplicationCommandInteraction):
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Status request')
@@ -42,7 +42,7 @@ class Settings(commands.Cog):
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
 
-        description = "Check the [Github](https://github.com/s0me-1/devtracker) page " \
+        description = "Check the [Github](https://github.com/s0me-1/devtracker-bot#commands) page " \
             "if you need any help.\n" +  u'\u200B'
 
         emb = disnake.Embed(
@@ -69,7 +69,7 @@ class Settings(commands.Cog):
         fw_tab = ''
 
         max_fw = max(fw_status,key=lambda fw: len(fw[1]))
-        lg = len(max_fw[0])
+        lg = len(max_fw[1])
         for gid, gname, game_ch_id, last_post_id in fw_status:
             fw_line = ''
             offset = lg - len(gname)

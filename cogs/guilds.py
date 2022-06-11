@@ -1,5 +1,6 @@
 import logging
 
+import disnake
 from disnake.ext import commands
 
 from cogs.utils import database as db
@@ -21,12 +22,29 @@ class Guilds(commands.Cog):
     # ---------------------------------------------------------------------------------
 
     @commands.Cog.listener()
-    async def on_guild_join(self, guild):
+    async def on_guild_join(self, guild : disnake.Guild):
         logger.info(f'{guild.name} [{guild.id}] added to DB.')
         ORM.add_guild(guild.id)
 
+        # We can see the owner only if we have the Members privileged intent
+        if not guild.owner:
+            return
+
+        msg = "I'm now ready to track GameDevs for you !\n"
+        msg += "Use the following command in your server to follow your first game:\n"
+        msg += "```\n"
+        msg += "/dt-set-channel game\n"
+        msg += "```\n"
+        msg += "You can find some explainations for all available commands on <https://github.com/s0me-1/devtracker-bot#commands>."
+
+        try:
+            await guild.owner.send(msg)
+        except disnake.Forbidden:
+            logger.warning(f'{guild.owner.name} has blocked his DMs.')
+
+
     @commands.Cog.listener()
-    async def on_guild_remove(self, guild):
+    async def on_guild_remove(self, guild : disnake.Guild):
         logger.info(f'{guild.name} [{guild.id}] removed from DB.')
         ORM.rm_guild(guild.id)
 

@@ -68,7 +68,7 @@ class Settings(commands.Cog):
 
         fw_tab = ''
 
-        max_fw = max(fw_status,key=lambda fw: len(fw[0]))
+        max_fw = max(fw_status,key=lambda fw: len(fw[1]))
         lg = len(max_fw[0])
         for gid, gname, game_ch_id, last_post_id in fw_status:
             fw_line = ''

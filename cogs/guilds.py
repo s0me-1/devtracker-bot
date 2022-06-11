@@ -17,9 +17,24 @@ class Guilds(commands.Cog):
         self.bot = bot
         logger.info('Loaded.')
 
+        msg = "Use the command below **in your Server** to follow your first game 🎮\n"
+        msg += "```\n"
+        msg += "/dt-set-channel game\n"
+        msg += "```\n"
+        msg += "You can find some explanations for all available commands on <https://github.com/s0me-1/devtracker-bot#commands>."
+
+        self.help_message = msg
+
     # ---------------------------------------------------------------------------------
     # EVENT LISTENERS
     # ---------------------------------------------------------------------------------
+
+    @commands.Cog.listener()
+    async def on_message(self, message: disnake.Message):
+        if isinstance(message.channel, disnake.DMChannel) and message.author != self.bot.user:
+
+            await message.reply(self.help_message)
+
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild : disnake.Guild):
@@ -36,11 +51,7 @@ class Guilds(commands.Cog):
             return
 
         msg = "I'm now ready to track GameDevs for you !\n"
-        msg += "Use the following command in your server to follow your first game:\n"
-        msg += "```\n"
-        msg += "/dt-set-channel game\n"
-        msg += "```\n"
-        msg += "You can find some explainations for all available commands on <https://github.com/s0me-1/devtracker-bot#commands>."
+        msg += self.help_message
 
         try:
             await guild.owner.send(msg)

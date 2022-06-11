@@ -25,7 +25,7 @@ class Guilds(commands.Cog):
     async def on_guild_join(self, guild : disnake.Guild):
 
         dt_channel = self.bot.get_channel(985250371981172757)
-        await dt_channel.send(f'`{guild.name} [{guild.id}]` joined. (Approx `{guild.approximate_member_count}` members)')
+        await dt_channel.send(f'`{guild.name} [{guild.id}]` joined. (Approx `{guild.member_count}` members)')
 
         ORM.add_guild(guild.id)
         logger.info(f'{guild.name} [{guild.id}] added to DB.')
@@ -52,10 +52,10 @@ class Guilds(commands.Cog):
     async def on_guild_remove(self, guild : disnake.Guild):
 
         dt_channel = self.bot.get_channel(985250371981172757)
-        await dt_channel.send(f'{guild.name} [{guild.id}] removed. (Approx `{guild.approximate_member_count}` members)')
+        await dt_channel.send(f'`{guild.name} [{guild.id}]` removed. (Approx `{guild.member_count}` members)')
 
         ORM.rm_guild(guild.id)
-        logger.info(f'`{guild.name} [{guild.id}]` removed from DB.')
+        logger.info(f'{guild.name} [{guild.id}] removed from DB.')
 
 
 def setup(bot: commands.Bot):

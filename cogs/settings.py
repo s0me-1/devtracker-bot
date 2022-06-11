@@ -39,8 +39,10 @@ class Settings(commands.Cog):
 
     @commands.slash_command(name="dt-status", description="See current configuration.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def status(self, inter):
+    async def status(self, inter : disnake.ApplicationCommandInteraction):
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Status request')
+
+        await inter.response.defer()
 
         default_channel_id = ORM.get_main_channel(inter.guild_id)
 
@@ -68,33 +70,41 @@ class Settings(commands.Cog):
         emb.add_field(name='📡 Followed Games', value=fw_tab, inline=False)
         emb.add_field(name='🔇 Ignored accounts', value=acc_tab, inline=False)
 
-        await inter.response.send_message(embed=emb)
+        await inter.edit_original_message(embed=emb)
 
     @commands.slash_command(name="dt-mute-account", description="Ignore posts from a specific account.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def mute_account(self, inter, game: str = commands.Param(autocomplete=ac.games), account_id: str = commands.Param(autocomplete=ac.accounts_all)):
+    async def mute_account(self, inter: disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games), account_id: str = commands.Param(autocomplete=ac.accounts_all)):
+
+        await inter.response.defer()
 
         game_ids = API.fetch_available_games()
+        if not game_ids:
+            await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
+            return
+
         if game not in game_ids.keys():
-            await inter.response.send_message(f"`{game}` is either an invalid game or unsupported.")
+            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
         else:
             game_id = game_ids[game]
             account_ids = API.fetch_accounts(game_id)
             if account_id not in account_ids:
-                await inter.response.send_message(f"`{account_id}` doesn't exists or isn't followed for {game}.")
+                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for {game}.")
             else:
                 ORM.add_ignored_account(inter.guild_id, account_id)
-                await inter.response.send_message(f'Posts from `{account_id}` will be ignored from now on.')
+                await inter.edit_original_message(f'Posts from `{account_id}` will be ignored from now on.')
 
     @commands.slash_command(name="dt-unmute-account", description="Unmute a previously ignored account.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
     async def unmute_account(self, inter, account_id: str = commands.Param(autocomplete=ac.accounts_ignored)):
+
+        await inter.response.defer()
         account_ids = ORM.get_ignored_accounts(inter.guild_id)
         if account_id not in account_ids:
-            await inter.response.send_message(f"`{account_id}` isn't in your ignore list.")
+            await inter.edit_original_message(f"`{account_id}` isn't in your ignore list.")
         else:
             ORM.rm_ignored_account(inter.guild_id, account_id)
-            await inter.response.send_message(f'Posts from `{account_id}` will no longer be ignored.')
+            await inter.edit_original_message(f'Posts from `{account_id}` will no longer be ignored.')
 
     # ---------------------------------------------------------------------------------
     # HELPERS
@@ -108,13 +118,13 @@ class Settings(commands.Cog):
 
         max_fw = max(fw_status,key=lambda fw: len(fw[0]))
         lg = len(max_fw[0])
-        for gname, game_ch_id, last_post_id in fw_status:
+        for gid, gname, game_ch_id, last_post_id in fw_status:
             fw_line = ''
             offset = lg - len(gname)
             fw_line += f"`{gname}"
             fw_line += " "*offset
             if game_ch_id:
-                fw_line += f"`  |  <#{game_ch_id}> - {last_post_id}\n"
+                fw_line += f"`  |  <#{game_ch_id}> - [{last_post_id}](https://developertracker.com/{gid}/?post={last_post_id})\n"
             else:
                  fw_line += f"` |  \n"
             fw_tab += fw_line

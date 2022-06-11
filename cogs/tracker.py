@@ -126,11 +126,17 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-follow", description="Add a game to follow.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def follow_game(self, inter, game: str = commands.Param(autocomplete=ac.games)):
+    async def follow_game(self, inter : disnake.AppCommandInteraction, game: str = commands.Param(autocomplete=ac.games)):
+
+        await inter.response.defer()
 
         game_ids = API.fetch_available_games()
+        if not game_ids:
+            await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
+            return
+
         if game not in game_ids.keys():
-            await inter.response.send_message(f"`{game}` is either an invalid game or unsupported.")
+            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
         else:
             game_id = game_ids[game]
 
@@ -143,18 +149,20 @@ class Tracker(commands.Cog):
                 msg += f" I'll post new entries in <#{channel_id}>"
             else:
                 msg += " Please use `/dt-set-channel` to receive the latest posts."
-            await inter.response.send_message(msg)
+            await inter.edit_original_message(msg)
 
             # Restart Tracker main task to fetch first new post
             self.resfresh_posts.restart()
 
     @commands.slash_command(name="dt-set-channel")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def set_channel(self, inter):
+    async def set_channel(self, inter: disnake.ApplicationCommandInteraction):
         pass
 
     @set_channel.sub_command(name="default", description="Set the default notification channel.")
     async def set_default_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel):
+
+        await inter.response.defer()
 
         ORM.set_main_channel(channel.id, inter.guild_id)
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as default channel')
@@ -168,14 +176,20 @@ class Tracker(commands.Cog):
             msg += "It seems I'm not allowed to view this channel, please check my permissions."
         elif not perms.send_messages:
             msg += "It seems I'm not allowed to send message in this channel, please check my permissions."
-        await inter.response.send_message(msg)
+        await inter.edit_original_message(msg)
 
     @set_channel.sub_command(name="game", description="Set the notification channel per game. The game will be followed if it's not the case already.")
     async def set_game_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel, game: str = commands.Param(autocomplete=ac.games)):
 
+        await inter.response.defer()
+
         game_ids = API.fetch_available_games()
+        if not game_ids:
+            await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
+            return
+
         if game not in game_ids.keys():
-            await inter.response.send_message(f"`{game}` is either an invalid game or unsupported.")
+            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
         else:
             game_id = game_ids[game]
 
@@ -196,7 +210,7 @@ class Tracker(commands.Cog):
             elif not perms.send_messages:
                 msg += "It seems I'm not allowed to send message in this channel, please check my permissions."
 
-            await inter.response.send_message(msg)
+            await inter.edit_original_message(msg)
 
             # Restart Tracker main task to fetch first new post
             self.resfresh_posts.restart()
@@ -209,51 +223,59 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-unfollow", description="Remove a game to the following list")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def unfollow_game(self, inter, game: str = commands.Param(autocomplete=ac.games_fw)):
+    async def unfollow_game(self, inter : disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games_fw)):
+
+        await inter.response.defer()
 
         local_games = ORM.get_local_games()
         game_id = [g[0] for g in local_games if g[1] == game][0]
 
         if not game_id:
-            await inter.response.send_message(f"`{game}` isn't in your following list.")
+            await inter.edit_original_message(f"`{game}` isn't in your following list.")
         else:
             ORM.rm_followed_game(game_id, inter.guild_id)
             msg = f'`{game}` has been removed from the following list.'
-            await inter.response.send_message(msg)
+            await inter.edit_original_message(msg)
 
     @commands.slash_command(name="dt-unset-channel")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def unset_channel(self, inter):
+    async def unset_channel(self, inter: disnake.ApplicationCommandInteraction):
         pass
 
     @unset_channel.sub_command(name="default", description="Unset the default notification channel.")
     async def unset_default_channel(self, inter: disnake.ApplicationCommandInteraction):
 
+        await inter.response.defer()
+
         ORM.unset_main_channel(inter.guild_id)
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Default channel deleted')
-        await inter.response.send_message("You don't have a default channel anymore, make sure you have one set for each followed games using `/dt-status`.")
+        await inter.edit_original_message("You don't have a default channel anymore, make sure you have one set for each followed games using `/dt-status`.")
 
     @unset_channel.sub_command(name="game", description="Unset the notification channel per game.")
     async def unset_game_channel(self, inter: disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games)):
+
+        await inter.response.defer()
 
         local_games = ORM.get_local_games()
         game_id = [g[0] for g in local_games if g[1] == game][0]
 
         if not game_id:
-            await inter.response.send_message("The game you entered isn't in your following list.")
+            await inter.edit_original_message("The game you entered isn't in your following list.")
         else:
             ORM.unset_game_channel(inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : Unset custom channel for `{game}`')
-            await inter.response.send_message(f"The notification channel for `{game}` is no longer set.")
+            await inter.edit_original_message(f"The notification channel for `{game}` is no longer set.")
 
     @commands.slash_command(name="dt-force-send-post", description="[TECHNICAL] Debug bad formatted messages.", guild_ids=[687999396612407341])
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def force_fetch_last_post(self, inter, post_id: str, game: str = commands.Param(autocomplete=ac.games)):
+    async def force_fetch_last_post(self, inter : disnake.ApplicationCommandInteraction, post_id: str, game: str = commands.Param(autocomplete=ac.games)):
+
+        await inter.response.defer()
 
         logger.info(f'Forcing fetch of {post_id}.')
         game_ids = API.fetch_available_games()
         if game not in game_ids.keys():
-            await inter.response.send_message(f"`{game}` is either an invalid game or unsupported.")
+            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
         else:
             game_id = game_ids[game]
             post = API.fetch_post(post_id, game_id)
@@ -262,10 +284,10 @@ class Tracker(commands.Cog):
             logger.debug(soup)
             logger.info(soup.prettify())
             if len(post) == 0:
-                await inter.response.send_message(f"`{post_id}` not found.")
+                await inter.edit_original_message(f"`{post_id}` not found.")
             else:
                 em = self._generate_embed(post[0])
-                await inter.response.send_message(embed=em)
+                await inter.edit_original_message(embed=em)
 
     # ---------------------------------------------------------------------------------
     # HELPERS

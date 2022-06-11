@@ -89,7 +89,7 @@ Each Slash Command has **autofillers** to help you.
 
 ### Follow a game in a specific channel
 ```console
-/dt-set-channel game channel: #general game: They Are Billions
+/dt-set-channel game channel: #tab-devtracker game: They Are Billions
 ```
 
 ### Ignore posts from a specific account
@@ -99,6 +99,9 @@ You'll find the account ID in the footer of each post
 /dt-mute-account game:Rainbow 6: Siege account_id:76561198137855828
 ```
 ### Get current configuration
+
+![DevTracker Config](https://i.imgur.com/mF20Mfk.png)
+
 ```console
 /dt-status
 ```

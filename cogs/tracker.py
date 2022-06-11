@@ -226,6 +226,29 @@ class Tracker(commands.Cog):
             # Restart Tracker main task to fetch first new post
             self.resfresh_posts.restart()
 
+
+    @commands.slash_command(name="dt-mute-account", description="Ignore posts from a specific account.")
+    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
+    async def mute_account(self, inter: disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games), account_id: str = commands.Param(autocomplete=ac.accounts_all)):
+
+        await inter.response.defer()
+
+        game_ids = API.fetch_available_games()
+        if not game_ids:
+            await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
+            return
+
+        if game not in game_ids.keys():
+            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
+        else:
+            game_id = game_ids[game]
+            account_ids = API.fetch_accounts(game_id)
+            if account_id not in account_ids:
+                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for {game}.")
+            else:
+                ORM.add_ignored_account(inter.guild_id, account_id)
+                await inter.edit_original_message(f'Posts from `{account_id}` will be ignored from now on.')
+
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS
     # ---------------------------------------------------------------------------------
@@ -276,6 +299,18 @@ class Tracker(commands.Cog):
             ORM.unset_game_channel(inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : Unset custom channel for `{game}`')
             await inter.edit_original_message(f"The notification channel for `{game}` is no longer set.")
+
+    @commands.slash_command(name="dt-unmute-account", description="Unmute a previously ignored account.")
+    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
+    async def unmute_account(self, inter, account_id: str = commands.Param(autocomplete=ac.accounts_ignored)):
+
+        await inter.response.defer()
+        account_ids = ORM.get_ignored_accounts(inter.guild_id)
+        if account_id not in account_ids:
+            await inter.edit_original_message(f"`{account_id}` isn't in your ignore list.")
+        else:
+            ORM.rm_ignored_account(inter.guild_id, account_id)
+            await inter.edit_original_message(f'Posts from `{account_id}` will no longer be ignored.')
 
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS

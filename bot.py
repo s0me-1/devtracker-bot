@@ -23,6 +23,7 @@ class DevTracker(commands.InteractionBot):
 
         self.load_extension("cogs.guilds")
         self.load_extension("cogs.settings")
+        self.load_extension("cogs.admin")
         self.load_extension("cogs.tracker")
 
 DT = DevTracker()

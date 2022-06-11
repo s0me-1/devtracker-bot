@@ -23,8 +23,13 @@ class Guilds(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild : disnake.Guild):
-        logger.info(f'{guild.name} [{guild.id}] added to DB.')
+
+        dt_channel = self.bot.get_channel(985250371981172757)
+        await dt_channel.send(f'{guild.name} [{guild.id}] joined.')
+
         ORM.add_guild(guild.id)
+        logger.info(f'{guild.name} [{guild.id}] added to DB.')
+
 
         # We can see the owner only if we have the Members privileged intent
         if not guild.owner:
@@ -45,8 +50,12 @@ class Guilds(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild : disnake.Guild):
-        logger.info(f'{guild.name} [{guild.id}] removed from DB.')
+
+        dt_channel = self.bot.get_channel(985250371981172757)
+        await dt_channel.send(f'{guild.name} [{guild.id}] removed.')
+
         ORM.rm_guild(guild.id)
+        logger.info(f'{guild.name} [{guild.id}] removed from DB.')
 
 
 def setup(bot: commands.Bot):

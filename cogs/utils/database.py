@@ -69,6 +69,13 @@ class ORM:
             for row in conn.execute("SELECT id, main_channel_id FROM guilds"):
                 print(tuple(row))
 
+    def get_all_guilds(self):
+        with self.conn as conn:
+            guilds = []
+            for row in conn.execute("SELECT id FROM guilds;"):
+                guilds.append(row['id'])
+            return guilds
+
     def add_followed_game(self, game_id, guild_id):
         with self.conn as conn:
             conn.execute("INSERT OR IGNORE INTO follows ('last_post_id', 'channel_id', 'follower_guild_id', 'followed_game_id' ) VALUES (?, ?, ?, ?);", (None, None, guild_id, game_id))

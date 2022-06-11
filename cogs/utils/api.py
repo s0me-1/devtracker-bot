@@ -30,7 +30,7 @@ class API:
         try:
             response = requests.get(url, headers=self.headers)
             response.raise_for_status()
-            return response.status_code
+            return response.status_code, response.elapsed.total_seconds()
         except requests.exceptions.RequestException as e:
             logger.warning(f"Error while connecting to {url}: {e}, falling back to database")
             return 500

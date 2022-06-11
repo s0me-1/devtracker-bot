@@ -10,8 +10,6 @@ from cogs.utils import api
 ORM = db.ORM()
 API = api.API()
 
-GAME_IDS = API.fetch_available_games()
-
 logger = logging.getLogger('bot.Settings')
 
 
@@ -52,7 +50,7 @@ class Settings(commands.Cog):
         ignored_accounts = ORM.get_ignored_accounts(inter.guild_id)
         fw_tab = self._generate_fw_table(fw_status)
         acc_tab = self._generate_ignored_acc_table(ignored_accounts)
-        api_status_code = API.get_status()
+        api_status_code, latency = API.get_status()
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
 
@@ -71,40 +69,6 @@ class Settings(commands.Cog):
         emb.add_field(name='🔇 Ignored accounts', value=acc_tab, inline=False)
 
         await inter.edit_original_message(embed=emb)
-
-    @commands.slash_command(name="dt-mute-account", description="Ignore posts from a specific account.")
-    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def mute_account(self, inter: disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games), account_id: str = commands.Param(autocomplete=ac.accounts_all)):
-
-        await inter.response.defer()
-
-        game_ids = API.fetch_available_games()
-        if not game_ids:
-            await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
-            return
-
-        if game not in game_ids.keys():
-            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
-        else:
-            game_id = game_ids[game]
-            account_ids = API.fetch_accounts(game_id)
-            if account_id not in account_ids:
-                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for {game}.")
-            else:
-                ORM.add_ignored_account(inter.guild_id, account_id)
-                await inter.edit_original_message(f'Posts from `{account_id}` will be ignored from now on.')
-
-    @commands.slash_command(name="dt-unmute-account", description="Unmute a previously ignored account.")
-    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def unmute_account(self, inter, account_id: str = commands.Param(autocomplete=ac.accounts_ignored)):
-
-        await inter.response.defer()
-        account_ids = ORM.get_ignored_accounts(inter.guild_id)
-        if account_id not in account_ids:
-            await inter.edit_original_message(f"`{account_id}` isn't in your ignore list.")
-        else:
-            ORM.rm_ignored_account(inter.guild_id, account_id)
-            await inter.edit_original_message(f'Posts from `{account_id}` will no longer be ignored.')
 
     # ---------------------------------------------------------------------------------
     # HELPERS

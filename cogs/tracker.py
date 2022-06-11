@@ -71,6 +71,17 @@ class Tracker(commands.Cog):
                 channel = guild.get_channel(default_channel_id)
             else:
                 logger.warning(f'{guild.name} [{guild.id}] follows {game_id} but hasnt set any channel')
+
+                # We can see the owner only if we have the Members privileged intent
+                if not guild.owner:
+                    continue
+
+                try:
+                    msg = "It seems you're following `{game_id}` but you have not set any channel !\n"
+                    msg += "Please set a channel with `/dt-set-channel` to receives the latests posts."
+                    await guild.owner.send(msg)
+                except disnake.Forbidden:
+                        logger.warning(f'{guild.owner.name} has blocked his DMs.')
                 continue
 
             embeds = []
@@ -265,6 +276,12 @@ class Tracker(commands.Cog):
             ORM.unset_game_channel(inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : Unset custom channel for `{game}`')
             await inter.edit_original_message(f"The notification channel for `{game}` is no longer set.")
+
+    # ---------------------------------------------------------------------------------
+    # APPLICATION COMMANDS
+    # ---------------------------------------------------------------------------------
+    # Debug      /
+    # ---------/
 
     @commands.slash_command(name="dt-force-send-post", description="[TECHNICAL] Debug bad formatted messages.", guild_ids=[687999396612407341])
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)

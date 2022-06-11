@@ -47,7 +47,7 @@ class Settings(commands.Cog):
 
         emb = disnake.Embed(
             description=description,
-            color=3426654
+            color=7506394
         )
 
         emb.set_author(name="⚙️ Current config")

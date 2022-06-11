@@ -8,6 +8,23 @@ Discord Bot interfacing with the API of [DeveloperTracker.com](https://developer
 
 Built with [Disnake](https://disnake.dev/).
 
+- [Features](#features)
+  * [Supported Games](#supported-games)
+- [Getting Started](#getting-started)
+  * [DISCLAMER:](#disclamer-)
+  * [Installation](#installation)
+- [Commands](#commands)
+  * [Set the default notification channel](#set-the-default-notification-channel)
+  * [Follow a game](#follow-a-game)
+  * [Follow a game in a specific channel](#follow-a-game-in-a-specific-channel)
+  * [Ignore posts from a specific account](#ignore-posts-from-a-specific-account)
+  * [Get current configuration](#get-current-configuration)
+- [Self-Hosting](#self-hosting)
+  * [Python](#python)
+  * [Docker-Compose](#docker-compose)
+- [Credits](#credits)
+- [License](#license)
+
 ## Features
 
 This Bot track any post made by GameDevs from **30+** games, and let you follow the one you want via [Discord Slash Commands](https://support.discord.com/hc/en-us/articles/1500000368501-Slash-Commands-FAQ).
@@ -97,6 +114,13 @@ Each Slash Command has **autofillers** to help you.
 You'll find the account ID in the footer of each post
 ```console
 /dt-mute-account game:Rainbow 6: Siege account_id:76561198137855828
+```
+
+### Unmute a specific account
+
+You can find the account you have ignored with the `/dt-status` slash command.
+```console
+/dt-mute-account account_id:76561198137855828
 ```
 ### Get current configuration
 

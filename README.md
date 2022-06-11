@@ -9,9 +9,8 @@ Discord Bot interfacing with the API of [DeveloperTracker.com](https://developer
 Built with [Disnake](https://disnake.dev/).
 
 - [Features](#features)
-  * [Supported Games](#supported-games)
+- [Supported Games](#supported-games)
 - [Getting Started](#getting-started)
-  * [Installation](#installation)
 - [Commands](#commands)
   * [Set the default notification channel](#set-the-default-notification-channel)
   * [Follow a game](#follow-a-game)
@@ -35,7 +34,7 @@ This Bot track any post made by GameDevs from **30+** games, and let you follow 
 
 ![DevTracker Post Example Steam](https://i.imgur.com/506lKDV.png)
 
-### Supported Games
+## Supported Games
 - ARK: Survival Evolved
 - Anthem
 - Battlefield 1

@@ -332,7 +332,11 @@ class Tracker(commands.Cog):
             game_id = game_ids[game]
             post = API.fetch_post(post_id, game_id)
 
-            soup = BeautifulSoup(post['content'], "html.parser")
+            if not post:
+                await inter.edit_original_message(f"I cannot fetch that post anymore.")
+                return
+
+            soup = BeautifulSoup(post[0]['content'], "html.parser")
             logger.debug(soup)
             logger.info(soup.prettify())
             if len(post) == 0:

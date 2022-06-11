@@ -76,7 +76,7 @@ class API:
             response.raise_for_status()
             posts = response.json()['data']
             post = [p for p in posts if p['id'] == post_id]
-            return post[0]
+            return post
         except requests.exceptions.RequestException as e:
             logger.warning(f"Error while fetching posts {url}: {e}")
 

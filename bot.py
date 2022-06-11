@@ -27,5 +27,4 @@ class DevTracker(commands.InteractionBot):
         self.load_extension("cogs.tracker")
 
 DT = DevTracker()
-token = sec.load('bot_token')
-DT.run(token)
+DT.run(TOKEN)

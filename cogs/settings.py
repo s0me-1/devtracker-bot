@@ -23,18 +23,6 @@ class Settings(commands.Cog):
     # APPLICATION COMMANDS
     # ---------------------------------------------------------------------------------
 
-    @commands.slash_command(name="dt-invite", description="Invite DevTracker to your server.")
-    async def invite(self, inter):
-        logger.info(f'{inter.guild.name} [{inter.guild_id}] : Show invite link.')
-
-        invite_btn = disnake.ui.Button(
-            label="Invite Me !",
-            url="https://discord.com/api/oauth2/authorize?client_id=982257201211138050&permissions=274877958144&scope=applications.commands%20bot",
-            style=disnake.ButtonStyle.link,
-        ),
-
-        await inter.response.send_message(components=[invite_btn])
-
     @commands.slash_command(name="dt-status", description="See current configuration.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
     async def status(self, inter : disnake.ApplicationCommandInteraction):

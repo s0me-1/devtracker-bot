@@ -68,6 +68,27 @@ class Guilds(commands.Cog):
         ORM.rm_guild(guild.id)
         logger.info(f'{guild.name} [{guild.id}] removed from DB.')
 
+    # ---------------------------------------------------------------------------------
+    # SLASH COMMANDS
+    # ---------------------------------------------------------------------------------
+
+    @commands.slash_command(name="dt-invite", description="Invite DevTracker to your server.")
+    async def invite(self, inter : disnake.ApplicationCommandInteraction):
+        logger.info(f'{inter.guild.name} [{inter.guild_id}] : Show invite link.')
+
+        invite_btn = disnake.ui.Button(
+            label="Invite Me !",
+            url="https://discord.com/api/oauth2/authorize?client_id=982257201211138050&permissions=274877958144&scope=applications.commands%20bot",
+            style=disnake.ButtonStyle.link,
+        ),
+
+        await inter.response.send_message(components=[invite_btn])
+
+    @commands.slash_command(name="dt-help", description="Struggling getting started?")
+    async def help(self, inter : disnake.ApplicationCommandInteraction):
+        logger.info(f'{inter.guild.name} [{inter.guild_id}] : Show help.')
+
+        await inter.response.send_message(self.help_message)
 
 def setup(bot: commands.Bot):
     bot.add_cog(Guilds(bot))

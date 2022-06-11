@@ -11,7 +11,6 @@ Built with [Disnake](https://disnake.dev/).
 - [Features](#features)
   * [Supported Games](#supported-games)
 - [Getting Started](#getting-started)
-  * [DISCLAMER:](#disclamer-)
   * [Installation](#installation)
 - [Commands](#commands)
   * [Set the default notification channel](#set-the-default-notification-channel)

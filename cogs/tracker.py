@@ -372,7 +372,7 @@ class Tracker(commands.Cog):
         nb_char_overflow = len(soup.prettify()) - 2048
 
         # Fix blockquote from Spectrum
-        if origin == 'rsi':
+        if origin in ['rsi', 'Bungie.net']:
             for quoteauthor in soup.find_all('div', {'class': 'quoteauthor'}):
                 quoteauthor.insert_after(soup.new_tag("br"))
                 quoteauthor.insert_after(soup.new_tag("br"))

@@ -42,8 +42,9 @@ class Settings(commands.Cog):
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
 
-        description = "Check the [Github](https://github.com/s0me-1/devtracker-bot#commands) page " \
-            "if you need any help.\n" +  u'\u200B'
+        description = "Need any help ? You can find some here :\n" \
+            " - Official [Discord Server](https://discord.gg/QN9uveFYXX)\n" \
+            " - [Github](https://github.com/s0me-1/devtracker-bot#commands) page." +  u'\u200B'
 
         emb = disnake.Embed(
             description=description,

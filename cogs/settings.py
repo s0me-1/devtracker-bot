@@ -65,7 +65,7 @@ class Settings(commands.Cog):
             emb.add_field(name='📡 Followed Games', value=fw_tab, inline=False)
             embeds.append(emb)
 
-        await inter.edit_original_message(embed=emb)
+        await inter.edit_original_message(embeds=embeds)
 
     # ---------------------------------------------------------------------------------
     # HELPERS

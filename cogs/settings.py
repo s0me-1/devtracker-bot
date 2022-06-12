@@ -37,7 +37,7 @@ class Settings(commands.Cog):
         fw_status = ORM.get_follow_status(inter.guild_id)
         ignored_accounts = ORM.get_ignored_accounts(inter.guild_id)
         fw_tabs = self._generate_fw_table(fw_status)
-        acc_tab = self._generate_ignored_acc_table(ignored_accounts)
+        acc_tabs = self._generate_ignored_acc_table(ignored_accounts)
         api_status_code, latency = API.get_status()
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
@@ -54,7 +54,6 @@ class Settings(commands.Cog):
         emb.add_field(name='Default Channel', value=chname, inline=True)
         emb.add_field(name=api_status, value=api_md, inline=True)
         emb.add_field(name='📡 Followed Games', value=fw_tabs[0], inline=False)
-        emb.add_field(name='🔇 Ignored accounts', value=acc_tab, inline=False)
 
         embeds = []
         embeds.append(emb)
@@ -65,7 +64,15 @@ class Settings(commands.Cog):
             emb.add_field(name='📡 Followed Games', value=fw_tab, inline=False)
             embeds.append(emb)
 
-        await inter.edit_original_message(embeds=embeds)
+        for acc_tab in acc_tabs:
+            emb = disnake.Embed(
+                color=7506394
+            )
+            emb.add_field(name='🔇 Ignored accounts', value=acc_tab, inline=False)
+            embeds.append(emb)
+
+        # Max 10 embeds can be sent at once
+        await inter.edit_original_message(embeds=embeds[0:9])
 
     # ---------------------------------------------------------------------------------
     # HELPERS
@@ -73,7 +80,7 @@ class Settings(commands.Cog):
     def _generate_fw_table(self, fw_status):
 
         if not fw_status:
-            return 'None\n'
+            return ['None\n']
 
         fw_tabs = []
         fw_tab = ''
@@ -93,13 +100,11 @@ class Settings(commands.Cog):
 
             # Max Field size is 1024 characters
             if len(fw_line) + len(fw_tab) > 1024:
-                fw_tab + u'\u200B'
                 fw_tabs.append(fw_tab)
                 fw_tab = ''
 
             fw_tab += fw_line
 
-        fw_tab + u'\u200B'
         fw_tabs.append(fw_tab)
 
         return fw_tabs
@@ -107,13 +112,20 @@ class Settings(commands.Cog):
     def _generate_ignored_acc_table(self, ignored_accounts):
 
         if not ignored_accounts:
-            return 'None\n'
+            return ['None\n']
 
+        acc_tabs = []
         acc_tab = ''
         for acc_id in ignored_accounts:
             acc_line = f' - `{acc_id}`\n'
+
+            if len(acc_line) + len(acc_tab) > 1024:
+                acc_tabs.append(acc_tab)
+                acc_tab = ''
+
             acc_tab += acc_line
-        return acc_tab
+
+        return acc_tabs
 
 
 def setup(bot: commands.Bot):

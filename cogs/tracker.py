@@ -114,6 +114,7 @@ class Tracker(commands.Cog):
             post_id = posts[game_id][0]['id']
             ORM.set_last_post(post_id, guild_id, game_id)
             if embeds:
+                logger.info(f'Sending {len(embeds)} embeds from {len(posts[game_id])} posts.')
                 try:
                     await channel.send(embeds=embeds)
                 except disnake.Forbidden:

@@ -411,7 +411,8 @@ class Tracker(commands.Cog):
                     else:
                         ellipsis = soup.new_tag('blockquote')
                         ellipsis.string = '[...]'
-                        bqs[-1].replaceWith(ellipsis)
+                        bqs[-1].clear()
+                        bqs[-1].append(ellipsis)
                     nb_char_stripped += init_bq_size - len(bqs[-1].text)
                     continue
 

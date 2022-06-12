@@ -7,6 +7,10 @@ CUSTOMIZERS = {
         'icon_url': 'https://i.redd.it/z2edz6txf7351.png',
         'color': 3815996
     },
+    'Bungie.net': {
+        'icon_url': 'https://i.redd.it/z2edz6txf7351.png',
+        'color': 3815996
+    },
     'Discourse': {
         'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/discou10.png',
         'color': 16775598

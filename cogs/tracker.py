@@ -369,7 +369,7 @@ class Tracker(commands.Cog):
         if origin not in ['Twitter', ]:
             post_content = post_content.replace('\n', '')
         soup = BeautifulSoup(post_content, "html.parser")
-        nb_char_overflow = len(soup.prettify()) - 2048
+        nb_char_overflow = len(soup.prettify()) - 4096
 
         # Fix blockquote from Spectrum
         if origin in ['rsi', 'Bungie.net']:

@@ -36,7 +36,7 @@ class Settings(commands.Cog):
         api_md = "[DeveloperTracker.com](https://developertracker.com/)\n" +  u'\u200B'
         fw_status = ORM.get_follow_status(inter.guild_id)
         ignored_accounts = ORM.get_ignored_accounts(inter.guild_id)
-        fw_tab = self._generate_fw_table(fw_status)
+        fw_tabs = self._generate_fw_table(fw_status)
         acc_tab = self._generate_ignored_acc_table(ignored_accounts)
         api_status_code, latency = API.get_status()
         emoji = "✅" if api_status_code == 200 else "❌"
@@ -53,8 +53,17 @@ class Settings(commands.Cog):
         emb.set_author(name="⚙️ Current config")
         emb.add_field(name='Default Channel', value=chname, inline=True)
         emb.add_field(name=api_status, value=api_md, inline=True)
-        emb.add_field(name='📡 Followed Games', value=fw_tab, inline=False)
+        emb.add_field(name='📡 Followed Games', value=fw_tabs[0], inline=False)
         emb.add_field(name='🔇 Ignored accounts', value=acc_tab, inline=False)
+
+        embeds = []
+        embeds.append(emb)
+        for fw_tab in fw_tabs[1:]:
+            emb = disnake.Embed(
+                color=7506394
+            )
+            emb.add_field(name='📡 Followed Games', value=fw_tab, inline=False)
+            embeds.append(emb)
 
         await inter.edit_original_message(embed=emb)
 
@@ -66,6 +75,7 @@ class Settings(commands.Cog):
         if not fw_status:
             return 'None\n'
 
+        fw_tabs = []
         fw_tab = ''
 
         max_fw = max(fw_status,key=lambda fw: len(fw[1]))
@@ -79,9 +89,20 @@ class Settings(commands.Cog):
                 fw_line += f"`  |  <#{game_ch_id}> - [{last_post_id}](https://developertracker.com/{gid}/?post={last_post_id})\n"
             else:
                  fw_line += f"` |  \n"
+
+
+            # Max Field size is 1024 characters
+            if len(fw_line) + len(fw_tab) > 1024:
+                fw_tab + u'\u200B'
+                fw_tabs.append(fw_tab)
+                fw_tab = ''
+
             fw_tab += fw_line
 
-        return fw_tab + u'\u200B'
+        fw_tab + u'\u200B'
+        fw_tabs.append(fw_tab)
+
+        return fw_tabs
 
     def _generate_ignored_acc_table(self, ignored_accounts):
 

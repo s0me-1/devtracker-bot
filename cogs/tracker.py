@@ -51,7 +51,7 @@ class Tracker(commands.Cog):
     async def resfresh_posts(self):
 
         logger.debug('Refreshing posts.')
-        posts = self._fetch_posts()
+        posts = await self._fetch_posts()
         ordered_fws = self._fetch_fw()
 
         guild = None
@@ -142,7 +142,7 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
-        game_ids = API.fetch_available_games()
+        game_ids = await API.fetch_available_games()
         if not game_ids:
             await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
             return
@@ -195,7 +195,7 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
-        game_ids = API.fetch_available_games()
+        game_ids = await API.fetch_available_games()
         if not game_ids:
             await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
             return
@@ -234,7 +234,7 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
-        game_ids = API.fetch_available_games()
+        game_ids = await API.fetch_available_games()
         if not game_ids:
             await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
             return
@@ -243,7 +243,7 @@ class Tracker(commands.Cog):
             await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
         else:
             game_id = game_ids[game]
-            account_ids = API.fetch_accounts(game_id)
+            account_ids = await API.fetch_accounts(game_id)
             if account_id not in account_ids:
                 await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for {game}.")
             else:
@@ -326,12 +326,12 @@ class Tracker(commands.Cog):
         await inter.response.defer()
 
         logger.info(f'Forcing fetch of {post_id}.')
-        game_ids = API.fetch_available_games()
+        game_ids = await API.fetch_available_games()
         if game not in game_ids.keys():
             await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
         else:
             game_id = game_ids[game]
-            post = API.fetch_post(post_id, game_id)
+            post = await API.fetch_post(post_id, game_id)
 
             if not post:
                 await inter.edit_original_message(f"I cannot fetch that post anymore.")
@@ -356,11 +356,11 @@ class Tracker(commands.Cog):
         # Minimize calls on DBs/Disnake per guilds
         return sorted(follows, key=lambda fw: fw[2])
 
-    def _fetch_posts(self):
+    async def _fetch_posts(self):
         posts = defaultdict(dict)
         fw_games_ids = ORM.get_all_followed_games()
         for gid in fw_games_ids:
-            posts[gid] = API.fetch_posts(gid)
+            posts[gid] = await API.fetch_posts(gid)
 
         return posts
 

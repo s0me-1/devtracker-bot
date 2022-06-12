@@ -38,13 +38,14 @@ class Settings(commands.Cog):
         ignored_accounts = ORM.get_ignored_accounts(inter.guild_id)
         fw_tabs = self._generate_fw_table(fw_status)
         acc_tabs = self._generate_ignored_acc_table(ignored_accounts)
-        api_status_code, latency = API.get_status()
+        api_status_code, latency = await API.get_status()
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
 
-        description = "Need any help ? You can find some here :\n" \
-            " - Official [Discord Server](https://discord.gg/QN9uveFYXX)\n" \
-            " - [Github](https://github.com/s0me-1/devtracker-bot#commands) page." +  u'\u200B'
+        description = "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n" \
+            "Need any help ? You can find some here :\n" \
+            " - DevTracker Official [Discord Server](https://discord.gg/QN9uveFYXX).\n" \
+            " - DevTracker [Github](https://github.com/s0me-1/devtracker-bot#commands) page." +  u'\u200B'
 
         emb = disnake.Embed(
             description=description,
@@ -125,6 +126,8 @@ class Settings(commands.Cog):
                 acc_tab = ''
 
             acc_tab += acc_line
+
+        acc_tabs.append(acc_tab)
 
         return acc_tabs
 

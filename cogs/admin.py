@@ -35,7 +35,7 @@ class Admin(commands.Cog):
             color=7506394
         )
 
-        api_status_code, latency = API.get_status()
+        api_status_code, latency = await API.get_status()
         api_latency = f"{round(latency * 1000)}ms"
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"

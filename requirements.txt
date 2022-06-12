@@ -1,6 +1,8 @@
 disnake
-requests
-requests-cache
-bs4
-sec
+aiohttp
+aiohttp-client-cache
+aiosqlite
+sqlite3
+beautifulsoup4
 markdownify
+sec

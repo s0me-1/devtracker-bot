@@ -7,47 +7,45 @@ logger = logging.getLogger('bot.DB')
 DB_FILE = 'db/tracking.db'
 
 
-def initialize():
-    with sqlite3.connect(DB_FILE) as conn:
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS guilds (
-                id INTEGER PRIMARY KEY,
-                main_channel_id INTEGER
-            );
-        ''')
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS follows (
-                last_post_id NVARCHAR,
-                channel_id INTEGER,
-                follower_guild_id INTEGER NOT NULL,
-                followed_game_id NVARCHAR NOT NULL,
-                FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE,
-                FOREIGN KEY (followed_game_id) REFERENCES games (id) ON DELETE CASCADE,
-                PRIMARY KEY (follower_guild_id, followed_game_id)
-            );
-        ''')
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS games (
-                id NVARCHAR PRIMARY KEY,
-                name NVARCHAR
-            );
-        ''')
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS ignored_accounts (
-                account_id NVARCHAR NOT NULL,
-                follower_guild_id NOT NULL,
-                FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE
-                PRIMARY KEY (account_id, follower_guild_id)
-            );
-        ''')
-
-
 class ORM:
 
     _instances = {}
 
+    def initialize(self):
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS guilds (
+                    id INTEGER PRIMARY KEY,
+                    main_channel_id INTEGER
+                );
+            ''')
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS follows (
+                    last_post_id NVARCHAR,
+                    channel_id INTEGER,
+                    follower_guild_id INTEGER NOT NULL,
+                    followed_game_id NVARCHAR NOT NULL,
+                    FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE,
+                    FOREIGN KEY (followed_game_id) REFERENCES games (id) ON DELETE CASCADE,
+                    PRIMARY KEY (follower_guild_id, followed_game_id)
+                );
+            ''')
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS games (
+                    id NVARCHAR PRIMARY KEY,
+                    name NVARCHAR
+                );
+            ''')
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS ignored_accounts (
+                    account_id NVARCHAR NOT NULL,
+                    follower_guild_id NOT NULL,
+                    FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE
+                    PRIMARY KEY (account_id, follower_guild_id)
+                );
+            ''')
+
     def __init__(self):
-        initialize()
         self.conn = sqlite3.connect(DB_FILE)
         self.conn.row_factory = sqlite3.Row
 

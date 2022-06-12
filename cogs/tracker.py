@@ -404,12 +404,14 @@ class Tracker(commands.Cog):
                 init_bq_size = len(bq.text)
                 bq_ps = bq.findAll('p')
 
-                if len(bq_ps) < 2 and len(bqs) > 1:
-                    bqs[-1].decompose()
-                    if len(bqs) > 2:
+                if len(bq_ps) < 2:
+                    ellipsis = soup.new_tag('blockquote')
+                    if bqs[-1].string == '[...]':
+                        bqs[-1].decompose()
+                    else:
                         ellipsis = soup.new_tag('blockquote')
                         ellipsis.string = '[...]'
-                        bqs[-2].insert_after(ellipsis)
+                        bqs[-1].replaceWith(ellipsis)
                     nb_char_stripped += init_bq_size - len(bqs[-1].text)
                     continue
 

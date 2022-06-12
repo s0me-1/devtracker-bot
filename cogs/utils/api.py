@@ -28,7 +28,7 @@ class API:
     def get_status(self):
         url = f'{self.api_baseurl}/games'
         try:
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, timeout=10)
             response.raise_for_status()
             return response.status_code, response.elapsed.total_seconds()
         except requests.exceptions.RequestException as e:
@@ -40,7 +40,7 @@ class API:
 
         games = []
         try:
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, timeout=10)
             response.raise_for_status()
 
             data = response.json()['data']
@@ -62,7 +62,7 @@ class API:
         url = f'{self.api_baseurl}/{game_id}/posts'
 
         try:
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, timeout=10)
             response.raise_for_status()
             return response.json()['data']
         except requests.exceptions.RequestException as e:
@@ -84,7 +84,7 @@ class API:
         url = f'{self.api_baseurl}/{game_id}/accounts'
 
         try:
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, timeout=10)
             response.raise_for_status()
             accounts = response.json()['data']
             return [a['identifier'] for a in accounts]

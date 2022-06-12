@@ -85,7 +85,8 @@ class Guilds(commands.Cog):
         await inter.response.send_message(components=[invite_btn])
 
     @commands.slash_command(name="dt-help", description="Struggling getting started?")
-    async def help(self, inter : disnake.ApplicationCommandInteraction):
+    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
+    async def get_help_message(self, inter : disnake.ApplicationCommandInteraction):
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Show help.')
 
         await inter.response.send_message(self.help_message)

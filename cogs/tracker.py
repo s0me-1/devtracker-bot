@@ -464,7 +464,7 @@ class Tracker(commands.Cog):
             body_trimmed = re.sub(r'\n>\s*\n>\s*\n>\s*\n>', '\n> \n> ', body_trimmed)
         body_trimmed = re.sub(r'\n>\s*\n>\s*\n>', '\n> \n> ', body_trimmed)
 
-        description = (body_trimmed[:EMBEDS_MAX_DESC - 6] + '[...]') if len(body_trimmed) > EMBEDS_MAX_DESC else body_trimmed
+        description = (body_trimmed[:EMBEDS_MAX_DESC - 10] + '\n\n[...]') if len(body_trimmed) > EMBEDS_MAX_DESC else body_trimmed
 
         img_url = None
         img = soup.find('img')

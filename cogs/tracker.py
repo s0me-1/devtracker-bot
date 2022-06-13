@@ -65,6 +65,10 @@ class Tracker(commands.Cog):
                 default_channel_id = await ORM.get_main_channel(guild_id)
                 guild = self.bot.get_guild(guild_id)
 
+            # Means the bot lost permissions for some reasons
+            if not guild:
+                continue
+
             if channel_id:
                 channel = guild.get_channel(channel_id)
             elif default_channel_id:

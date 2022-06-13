@@ -3,6 +3,7 @@ from markdownify import MarkdownConverter
 from textwrap import fill
 
 line_beginning_re = re.compile(r'^', re.MULTILINE)
+all_text_bold_re = re.compile(r'^\*\*.*\*\*$')
 
 UNDERLINED = 'underlined'
 
@@ -37,6 +38,13 @@ class DiscordMarkdownConverted(MarkdownConverter):
                         break_long_words=False,
                         break_on_hyphens=False)
         return f'{text}\n\n' if text else '\n'
+
+    def convert_div(self, el, text, convert_as_inline):
+        """
+        empty <div><b>Text<b></div> should return line
+        """
+        is_title = all_text_bold_re.match(text)
+        return f'{text}\n' if is_title else text
 
     def convert_blockquote(self, el, text, convert_as_inline):
         """

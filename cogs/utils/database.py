@@ -4,7 +4,6 @@ import aiosqlite
 import logging
 
 logger = logging.getLogger('bot.DB')
-logger.setLevel(logging.DEBUG)
 
 DB_FILE = 'db/tracking.db'
 

@@ -2,7 +2,7 @@ import logging
 import time
 
 import sec
-import aiohttp
+from aiohttp import ClientSession, ClientConnectorError
 from aiohttp_client_cache import CachedSession, SQLiteBackend
 
 
@@ -17,7 +17,7 @@ class API:
 
     def __init__(self):
         self.token = sec.load('api_token')
-        self.cache = SQLiteBackend('api_cache')
+        self.cache = SQLiteBackend('api_cache', expire_after=60*3)
         self.headers = {'Authorization': f'Bearer {self.token}'}
         self.api_baseurl =  sec.load('api_base')
 
@@ -36,7 +36,7 @@ class API:
                     await resp.json()
                     response_time = time.monotonic() - start
                     return resp.status, response_time
-            except aiohttp.ClientConnectorError as e:
+            except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
 
     async def fetch_available_games(self):
@@ -51,7 +51,7 @@ class API:
                     api_games_data = [(g['identifier'], g['name']) for g in games]
                     await ORM.update_local_games(api_games_data)
                     games = api_games_data
-            except aiohttp.ClientConnectorError as e:
+            except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
                 games = await ORM.get_local_games()
 
@@ -65,14 +65,14 @@ class API:
     async def fetch_posts(self, game_id):
         url = f'{self.api_baseurl}/{game_id}/posts'
 
-        async with CachedSession(cache=self.cache, headers=self.headers) as session:
+        async with ClientSession(headers=self.headers) as session:
             try:
                 async with session.get(url) as resp:
                     response = await resp.json()
                     posts = response['data']
                     return posts
 
-            except aiohttp.ClientConnectorError as e:
+            except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
 
     async def fetch_post(self, post_id ,game_id):
@@ -85,7 +85,7 @@ class API:
                     posts = content['data']
                     post = [p for p in posts if p['id'] == post_id]
                     return post
-            except aiohttp.ClientConnectorError as e:
+            except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
 
     async def fetch_accounts(self, game_id):
@@ -97,5 +97,5 @@ class API:
                     response = await resp.json()
                     accounts = response['data']
                     return [a['identifier'] for a in accounts]
-            except aiohttp.ClientConnectorError as e:
+            except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))

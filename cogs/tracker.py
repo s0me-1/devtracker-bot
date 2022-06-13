@@ -112,15 +112,16 @@ class Tracker(commands.Cog):
 
                 # Remove last embed if we're not repecting the Discords limits
                 if len(embeds) > EMBEDS_MAX_AMOUNT or embeds_size > EMBEDS_MAX_TOTAL:
+                    logger.warning("Discord Limits Reached, removing last embed.")
                     embeds.pop()
                     break
 
-            post_id = posts[game_id][0]['id']
-            await ORM.set_last_post(post_id, guild_id, game_id)
             if embeds:
                 logger.info(f'Sending {len(embeds)} embeds from {len(posts[game_id])} posts.')
                 try:
                     await channel.send(embeds=embeds)
+                    post_id = posts[game_id][0]['id']
+                    await ORM.set_last_post(post_id, guild_id, game_id)
                 except disnake.Forbidden:
                     logger.warning(f"Missing permissions for #{channel.name}")
                     if default_channel_id and default_channel_id != channel.id:

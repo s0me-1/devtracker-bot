@@ -1,8 +1,10 @@
 from collections import defaultdict
+from distutils.debug import DEBUG
 import aiosqlite
 import logging
 
 logger = logging.getLogger('bot.DB')
+logger.setLevel(logging.DEBUG)
 
 DB_FILE = 'db/tracking.db'
 
@@ -64,6 +66,7 @@ class ORM:
     async def rm_guild(self, guild_id):
         async with aiosqlite.connect(DB_FILE) as conn:
             await conn.set_trace_callback(logger.debug)
+            await conn.execute("PRAGMA foreign_keys = 1")
 
             query = "DELETE FROM guilds WHERE id = ?;"
             params = (guild_id,)
@@ -275,6 +278,7 @@ class ORM:
         async with aiosqlite.connect(DB_FILE) as conn:
             conn.row_factory = aiosqlite.Row
             await conn.set_trace_callback(logger.debug)
+            await conn.execute("PRAGMA foreign_keys = 1")
 
             query = "SELECT id FROM games"
 

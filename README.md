@@ -139,6 +139,15 @@ Once you have your credentials, you can either:
 - Fill the `example.env` file and rename it into `.env`.
 - Use `docker-compose.yml` with [Docker Secrets](https://docs.docker.com/engine/swarm/secrets/).
 
+Here's what you'll need to set:
+- `API_BASE`: The DeveloperTracker.com API base url.
+- `API_TOKEN`: Your DeveloperTracker.com API Token.
+- `BOT_TOKEN`:  Your [Discord Bot Token](https://discord.com/developers/applications)
+
+Optional (Only used when the `--log-level debug` argument is passed or with `docker-compose --profile debug`.):
+- `DEBUG_GUILD_ID`: Your Debug Guild ID, slash commands will only be synchronized for this guild only.
+- `DEBUG_BOT_TOKEN`:  Your Debug [Discord Bot Token](https://discord.com/developers/applications), to run the bot on a seperate Discord App when debugging.
+
 You can then launch the bot as described below:
 
 ### Python
@@ -154,9 +163,15 @@ $ python bot.py
 
 ### Docker-Compose
 Docker will manage the dependancies for you.
+It will build the images automatically on first run.
 
 ```console
-$ docker-compose up -d
+$ docker-compose --profile default up -d
+```
+
+Run in debug mode:
+```console
+$ docker-compose --profile debug up -d
 ```
 
 ## Credits

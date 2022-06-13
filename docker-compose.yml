@@ -1,6 +1,7 @@
 version: "3"
 services:
   devtracker-bot:
+    profiles: ["default"]
     image: "s0me-1:devtracker-bot"
     build:
       context: "."
@@ -16,6 +17,24 @@ services:
       - api_token
       - api_base
 
+  devtracker-bot-debug:
+    profiles: ["debug"]
+    image: "s0me-1:devtracker-bot-debug"
+    build:
+      context: "."
+      dockerfile: "Dockerfile"
+    command: ["python", "bot.py", "--log-level", "debug"]
+    env_file:
+      - .env
+    volumes:
+      - "./db:/db"
+    secrets:
+      - bot_token
+      - api_token
+      - api_base
+      - debug_bot_token
+      - debug_guild_id
+
 secrets:
   bot_token:
     file: bot_token.sec
@@ -23,3 +42,7 @@ secrets:
     file: api_token.sec
   api_base:
     file: api_base.sec
+  debug_bot_token:
+    file: debug_bot_token.sec
+  debug_guild_id:
+    file: debug_guild_id.sec

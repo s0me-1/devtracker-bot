@@ -78,7 +78,7 @@ class API:
     async def fetch_post(self, post_id ,game_id):
         url = f'{self.api_baseurl}/{game_id}/posts'
 
-        async with CachedSession(cache=self.cache, headers=self.headers) as session:
+        async with ClientSession(headers=self.headers) as session:
             try:
                 async with session.get(url) as resp:
                     content = await resp.json()

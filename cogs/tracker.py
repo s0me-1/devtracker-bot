@@ -379,7 +379,7 @@ class Tracker(commands.Cog):
         if origin not in ['Twitter', ]:
             post_content = post_content.replace('\n', '')
         soup = BeautifulSoup(post_content, "html.parser")
-        nb_char_overflow = len(soup.prettify()) - 4096
+        nb_char_overflow = len(soup.prettify()) - EMBEDS_MAX_DESC
 
         # Fix blockquote from Spectrum
         if origin in ['rsi', 'Bungie.net']:
@@ -464,7 +464,7 @@ class Tracker(commands.Cog):
             body_trimmed = re.sub(r'\n>\s*\n>\s*\n>\s*\n>', '\n> \n> ', body_trimmed)
         body_trimmed = re.sub(r'\n>\s*\n>\s*\n>', '\n> \n> ', body_trimmed)
 
-        description = (body_trimmed[:2040] + '...') if len(body_trimmed) > 2045 else body_trimmed
+        description = (body_trimmed[:EMBEDS_MAX_DESC - 6] + '[...]') if len(body_trimmed) > EMBEDS_MAX_DESC else body_trimmed
 
         img_url = None
         img = soup.find('img')

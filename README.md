@@ -3,7 +3,7 @@
 </p>
 
 # DevTracker
-<a href="https://discord.gg/disnake"><img src="https://img.shields.io/discord/984016998084247582?style=flat-square&color=5865f2&logo=discord&logoColor=ffffff&label=discord" alt="Discord server invite" /></a>
+<a href="https://discord.gg/QN9uveFYXX"><img src="https://img.shields.io/discord/984016998084247582?style=flat-square&color=5865f2&logo=discord&logoColor=ffffff&label=discord" alt="Discord server invite" /></a>
 <a href="https://pypi.python.org/pypi/disnake"><img src="https://img.shields.io/pypi/pyversions/disnake.svg?style=flat-square" alt="PyPI supported Python versions" /></a>
 
 

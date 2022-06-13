@@ -52,17 +52,17 @@ class Tracker(commands.Cog):
 
         logger.debug('Refreshing posts.')
         posts = await self._fetch_posts()
-        ordered_fws = self._fetch_fw()
+        ordered_fws = await self._fetch_fw()
 
         guild = None
         channel = None
         default_channel_id = None
 
-        all_ignored_accounts = ORM.get_all_ignored_accounts()
+        all_ignored_accounts = await ORM.get_all_ignored_accounts()
 
         for last_post_id, channel_id, guild_id, game_id in ordered_fws:
             if not guild or guild.id != guild_id:
-                default_channel_id = ORM.get_main_channel(guild_id)
+                default_channel_id = await ORM.get_main_channel(guild_id)
                 guild = self.bot.get_guild(guild_id)
 
             if channel_id:
@@ -112,7 +112,7 @@ class Tracker(commands.Cog):
                     break
 
             post_id = posts[game_id][0]['id']
-            ORM.set_last_post(post_id, guild_id, game_id)
+            await ORM.set_last_post(post_id, guild_id, game_id)
             if embeds:
                 logger.info(f'Sending {len(embeds)} embeds from {len(posts[game_id])} posts.')
                 try:
@@ -152,10 +152,12 @@ class Tracker(commands.Cog):
         else:
             game_id = game_ids[game]
 
-            ORM.add_followed_game(game_id, inter.guild_id)
+            await ORM.add_followed_game(game_id, inter.guild_id)
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{game_id}" followed')
+
             msg = f'`{game}` has been added to following list.'
-            default_channel_id = ORM.get_main_channel(inter.guild_id)
-            game_channel_id = ORM.get_game_channel(game_id, inter.guild_id)
+            default_channel_id = await ORM.get_main_channel(inter.guild_id)
+            game_channel_id = await ORM.get_game_channel(game_id, inter.guild_id)
             channel_id = game_channel_id or default_channel_id
             if channel_id:
                 msg += f" I'll post new entries in <#{channel_id}>"
@@ -176,7 +178,7 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
-        ORM.set_main_channel(channel.id, inter.guild_id)
+        await ORM.set_main_channel(channel.id, inter.guild_id)
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as default channel')
 
         msg = f"<#{channel.id}> set as default channel.\n"
@@ -205,11 +207,11 @@ class Tracker(commands.Cog):
         else:
             game_id = game_ids[game]
 
-            fw = ORM.get_follow(inter.guild_id, game_id)
+            fw = await ORM.get_follow(inter.guild_id, game_id)
             if fw:
-                ORM.set_game_channel(channel.id, inter.guild_id, game_id)
+                await ORM.set_game_channel(channel.id, inter.guild_id, game_id)
             else:
-                ORM.add_fw_game_channel(channel.id, inter.guild_id, game_id)
+                await ORM.add_fw_game_channel(channel.id, inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as channel for `{game}`')
 
             msg = f"<#{channel.id}> set as notification channel for `{game}`.\n"
@@ -247,7 +249,8 @@ class Tracker(commands.Cog):
             if account_id not in account_ids:
                 await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for {game}.")
             else:
-                ORM.add_ignored_account(inter.guild_id, account_id)
+                await ORM.add_ignored_account(inter.guild_id, account_id)
+                logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" muted')
                 await inter.edit_original_message(f'Posts from `{account_id}` will be ignored from now on.')
 
     # ---------------------------------------------------------------------------------
@@ -262,13 +265,14 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
-        local_games = ORM.get_local_games()
+        local_games = await ORM.get_local_games()
         game_id = [g[0] for g in local_games if g[1] == game][0]
 
         if not game_id:
             await inter.edit_original_message(f"`{game}` isn't in your following list.")
         else:
-            ORM.rm_followed_game(game_id, inter.guild_id)
+            await ORM.rm_followed_game(game_id, inter.guild_id)
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{game_id}" unfollowed')
             msg = f'`{game}` has been removed from the following list.'
             await inter.edit_original_message(msg)
 
@@ -282,7 +286,7 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
-        ORM.unset_main_channel(inter.guild_id)
+        await ORM.unset_main_channel(inter.guild_id)
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Default channel deleted')
         await inter.edit_original_message("You don't have a default channel anymore, make sure you have one set for each followed games using `/dt-status`.")
 
@@ -291,13 +295,13 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
-        local_games = ORM.get_local_games()
+        local_games = await ORM.get_local_games()
         game_id = [g[0] for g in local_games if g[1] == game][0]
 
         if not game_id:
             await inter.edit_original_message("The game you entered isn't in your following list.")
         else:
-            ORM.unset_game_channel(inter.guild_id, game_id)
+            await ORM.unset_game_channel(inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : Unset custom channel for `{game}`')
             await inter.edit_original_message(f"The notification channel for `{game}` is no longer set.")
 
@@ -306,11 +310,12 @@ class Tracker(commands.Cog):
     async def unmute_account(self, inter, account_id: str = commands.Param(autocomplete=ac.accounts_ignored)):
 
         await inter.response.defer()
-        account_ids = ORM.get_ignored_accounts(inter.guild_id)
+        account_ids = await ORM.get_ignored_accounts(inter.guild_id)
         if account_id not in account_ids:
             await inter.edit_original_message(f"`{account_id}` isn't in your ignore list.")
         else:
-            ORM.rm_ignored_account(inter.guild_id, account_id)
+            await ORM.rm_ignored_account(inter.guild_id, account_id)
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" unmuted')
             await inter.edit_original_message(f'Posts from `{account_id}` will no longer be ignored.')
 
     # ---------------------------------------------------------------------------------
@@ -350,15 +355,15 @@ class Tracker(commands.Cog):
     # HELPERS
     # ---------------------------------------------------------------------------------
 
-    def _fetch_fw(self):
-        follows = ORM.get_all_follows()
+    async def _fetch_fw(self):
+        follows = await ORM.get_all_follows()
 
         # Minimize calls on DBs/Disnake per guilds
         return sorted(follows, key=lambda fw: fw[2])
 
     async def _fetch_posts(self):
         posts = defaultdict(dict)
-        fw_games_ids = ORM.get_all_followed_games()
+        fw_games_ids = await ORM.get_all_followed_games()
         for gid in fw_games_ids:
             posts[gid] = await API.fetch_posts(gid)
 

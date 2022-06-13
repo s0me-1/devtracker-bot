@@ -20,7 +20,7 @@ async def games(inter: disnake.ApplicationCommandInteraction, user_input: str):
     return max_list[0:24]
 
 async def games_fw(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    fw_game_ids = ORM.get_followed_games(inter.guild_id)
+    fw_game_ids = await ORM.get_followed_games(inter.guild_id)
     max_list = [g for g in fw_game_ids.keys() if (user_input.lower() in g.lower())]
     return max_list[0:24]
 
@@ -34,6 +34,6 @@ async def accounts_all(inter: disnake.ApplicationCommandInteraction, user_input:
     return max_list[0:24]
 
 async def accounts_ignored(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    account_ids = ORM.get_ignored_accounts(inter.guild_id)
+    account_ids = await ORM.get_ignored_accounts(inter.guild_id)
     max_list = [acc_id for acc_id in account_ids if user_input.lower() in acc_id.lower()]
     return max_list[0:24]

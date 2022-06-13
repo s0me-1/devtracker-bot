@@ -40,14 +40,14 @@ class Admin(commands.Cog):
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
 
-        guild_ids = ORM.get_all_guilds()
+        guild_ids = await ORM.get_all_guilds()
 
         total_members = 0
         for guild_id in guild_ids:
             guild = self.bot.get_guild(guild_id)
             total_members += guild.member_count
 
-        follows = ORM.get_all_follows()
+        follows = await ORM.get_all_follows()
 
         emb.set_author(name="📊 Current Statistics")
         emb.add_field(name='🎮 Total Follows', value=f"{len(follows)}", inline=True)

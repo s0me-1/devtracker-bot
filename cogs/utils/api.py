@@ -49,11 +49,11 @@ class API:
                     response = await resp.json()
                     games = response['data']
                     api_games_data = [(g['identifier'], g['name']) for g in games]
-                    ORM.update_local_games(api_games_data)
+                    await ORM.update_local_games(api_games_data)
                     games = api_games_data
             except aiohttp.ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
-                games = ORM.get_local_games()
+                games = await ORM.get_local_games()
 
         game_dict = {}
         for g in games:

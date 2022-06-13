@@ -49,7 +49,7 @@ class Guilds(commands.Cog):
         if dt_channel:
             await dt_channel.send(f'`{guild.name} [{guild.id}]` joined. (Approx `{guild.member_count}` members)')
 
-        ORM.add_guild(guild.id)
+        await ORM.add_guild(guild.id)
         logger.info(f'{guild.name} [{guild.id}] added to DB.')
 
 
@@ -73,7 +73,7 @@ class Guilds(commands.Cog):
         if dt_channel:
             await dt_channel.send(f'`{guild.name} [{guild.id}]` removed. (Approx `{guild.member_count}` members)')
 
-        ORM.rm_guild(guild.id)
+        await ORM.rm_guild(guild.id)
         logger.info(f'{guild.name} [{guild.id}] removed from DB.')
 
     # ---------------------------------------------------------------------------------

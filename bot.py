@@ -30,5 +30,6 @@ class DevTracker(commands.InteractionBot):
         self.load_extension("cogs.tracker")
 
 DT = DevTracker()
-ORM().initialize()
+init_db_tack = DT.loop.create_task(ORM().initialize())
+DT.loop.run_until_complete(init_db_tack)
 DT.run(TOKEN)

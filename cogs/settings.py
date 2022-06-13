@@ -30,12 +30,12 @@ class Settings(commands.Cog):
 
         await inter.response.defer()
 
-        default_channel_id = ORM.get_main_channel(inter.guild_id)
+        default_channel_id = await ORM.get_main_channel(inter.guild_id)
 
         chname = f'<#{default_channel_id}>' if default_channel_id else 'Not set'
         api_md = "[DeveloperTracker.com](https://developertracker.com/)\n" +  u'\u200B'
-        fw_status = ORM.get_follow_status(inter.guild_id)
-        ignored_accounts = ORM.get_ignored_accounts(inter.guild_id)
+        fw_status = await ORM.get_follow_status(inter.guild_id)
+        ignored_accounts = await ORM.get_ignored_accounts(inter.guild_id)
         fw_tabs = self._generate_fw_table(fw_status)
         acc_tabs = self._generate_ignored_acc_table(ignored_accounts)
         api_status_code, latency = await API.get_status()

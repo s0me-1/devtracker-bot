@@ -460,7 +460,7 @@ class Tracker(commands.Cog):
 
         # For blocquotes too
         # There's probably a simpler way to do this, but I'm too tired to fight with regex :D
-        while re.search(r'\n>\s*\n>\s*\n>\s*\n>', body, re.MULTILINE):
+        while re.search(r'\n>\s*\n>\s*\n>\s*\n>', body_trimmed, re.MULTILINE):
             body_trimmed = re.sub(r'\n>\s*\n>\s*\n>\s*\n>', '\n> \n> ', body_trimmed)
         body_trimmed = re.sub(r'\n>\s*\n>\s*\n>', '\n> \n> ', body_trimmed)
 

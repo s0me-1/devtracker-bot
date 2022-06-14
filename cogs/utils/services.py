@@ -15,6 +15,10 @@ CUSTOMIZERS = {
         'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/discou10.png',
         'color': 16775598
     },
+    'FuncomForums': {
+        'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/discou10.png',
+        'color': 16775598
+    },
     'Instagram': {
         'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/132px-10.png',
         'color': 14563174
@@ -54,5 +58,10 @@ CUSTOMIZERS = {
     'SteamFeed': {
         'icon_url': 'https://cdn.freebiesupply.com/images/large/2x/steam-logo-black-transparent.png',
         'color': 0
+    },
+
+    'default': {
+            'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/273-2710.png',
+            'color': 10070709
     },
 }

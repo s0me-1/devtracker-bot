@@ -478,8 +478,15 @@ class Tracker(commands.Cog):
         service = post['account']['service']
 
         description, img_url = self._sanitize_post_content(post['content'], origin=service)
-        color = CUSTOMIZERS[service]['color']
-        author_icon_url = CUSTOMIZERS[service]['icon_url']
+
+        color = CUSTOMIZERS['default']['color']
+        author_icon_url = CUSTOMIZERS['default']['icon_url']
+
+        if service in CUSTOMIZERS.keys():
+            color = CUSTOMIZERS[service]['color']
+            author_icon_url = CUSTOMIZERS[service]['icon_url']
+        else:
+            logger.warning(f'{service} NOT FOUND in CUSTOMIZERS !')
 
         acc_id = post['account']['identifier']
         acc_dev_nick = post['account']['developer']['nick']

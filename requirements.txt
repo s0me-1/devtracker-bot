@@ -5,3 +5,4 @@ aiosqlite
 beautifulsoup4
 markdownify
 sec
+emoji

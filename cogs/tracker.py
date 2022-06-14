@@ -8,6 +8,7 @@ import disnake
 from disnake.ext import tasks, commands
 
 from cogs.utils.services import CUSTOMIZERS
+from cogs.utils.emojimapper import EmojiMapper
 from cogs.utils import autocompleters as ac
 from cogs.utils import mardownify_discord as md
 from cogs.utils import database as db
@@ -28,6 +29,7 @@ class Tracker(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.EM = EmojiMapper()
         self.resfresh_posts.start()
         logger.info("Loaded.")
 
@@ -378,6 +380,10 @@ class Tracker(commands.Cog):
 
         if origin not in ['Twitter', ]:
             post_content = post_content.replace('\n', '')
+
+        # Fix Missing emojis
+        post_content = self.EM._replace_emoji_shortcodes(post_content)
+
         soup = BeautifulSoup(post_content, "html.parser")
         nb_char_overflow = len(soup.prettify()) - EMBEDS_MAX_DESC
 

@@ -473,9 +473,9 @@ class Tracker(commands.Cog):
         description = (body_trimmed[:EMBEDS_MAX_DESC - 15] + '...\n\n[...]') if len(body_trimmed) > EMBEDS_MAX_DESC else body_trimmed
 
         img_url = None
-        img = soup.find('img')
-        if img:
-            img_url = img['src']
+        imgs = soup.find_all('img')
+        if len(imgs) > 1:
+            img_url = imgs[-1]['src']
 
         return description, img_url
 

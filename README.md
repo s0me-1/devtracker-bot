@@ -80,10 +80,6 @@ This Bot track any post made by GameDevs from **30+** games, and let you follow 
 - Valheim
 
 ## Getting Started
-
-### DISCLAMER:
-> This bot is currently **BETA**, expects bugs but more importantly, report them [here](https://github.com/s0me-1/devtracker-bot/issues).
-
 ### Installation
 
 Click the button below to add **DevTracker** to your server.

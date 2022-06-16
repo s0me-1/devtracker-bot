@@ -506,7 +506,7 @@ class Tracker(commands.Cog):
         author_text = f'{acc_dev_nick} [{acc_dev_group}]' if acc_dev_group else f'{acc_dev_nick}'
         footer_text = f"Account: {acc_id} | DT#: {post['id']}"
 
-        footer_icon_url = "https://developertracker.com/star-citizen/favicon-32x32.png"
+        footer_icon_url = "https://i33.servimg.com/u/f33/11/20/17/41/clipar10.png"
         field_topic = f"[{post['topic']}]({post['url']})"
         field_published = f"{str(datetime.fromtimestamp(post['timestamp']))} (UTC)"
 

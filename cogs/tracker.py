@@ -414,22 +414,26 @@ class Tracker(commands.Cog):
             bqs = soup.find_all('blockquote')
             nb_char_stripped = 0
             last_processed_bq = False
+
+            nb_blocquotes = len(bqs)
             # We try to remove the less text possible, ellipsising is interrupted as soon as we can
-            while i < len(bqs) and nb_char_overflow > nb_char_stripped:
+            while i < nb_blocquotes and nb_char_overflow > nb_char_stripped:
                 bq = bqs[i]
                 init_bq_size = len(bq.text)
                 bq_ps = bq.findAll('p')
 
                 if len(bq_ps) < 2:
                     ellipsis = soup.new_tag('blockquote')
+
+                    nb_char_stripped += len(bqs[-1].text) - 5
                     if bqs[-1].string == '[...]':
                         bqs[-1].decompose()
+                        nb_blocquotes -= 1
                     else:
                         ellipsis = soup.new_tag('blockquote')
                         ellipsis.string = '[...]'
                         bqs[-1].clear()
-                        bqs[-1].append(ellipsis)
-                    nb_char_stripped += init_bq_size - len(bqs[-1].text)
+                        bqs[-1].append('[...]')
                     continue
 
                 ellipsis = soup.new_tag('p')

@@ -102,6 +102,7 @@ class Tracker(commands.Cog):
 
                 # Skip the post if the guild wanted to ignore the author
                 if post['account']['identifier'] in all_ignored_accounts[guild_id]:
+                    logger.info(f"Skipped. ({post['account']['identifier']} is in the ignore list).")
                     continue
 
                 em = self._generate_embed(post)

@@ -479,7 +479,7 @@ class Tracker(commands.Cog):
 
         img_url = None
         imgs = soup.find_all('img')
-        if len(imgs) > 1:
+        if len(imgs) > 0:
             img_url = imgs[-1]['src']
 
         return description, img_url

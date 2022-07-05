@@ -49,7 +49,7 @@ class Tracker(commands.Cog):
     # TASKS
     # ---------------------------------------------------------------------------------
 
-    @tasks.loop(minutes=10.0)
+    @tasks.loop(minutes=5.0)
     async def resfresh_posts(self):
 
         logger.debug('Refreshing posts.')
@@ -89,6 +89,10 @@ class Tracker(commands.Cog):
                 except disnake.Forbidden:
                         logger.warning(f'{guild.owner.name} has blocked his DMs.')
                 continue
+
+            if not posts:
+                logger.error("API didnt returned anything !")
+                break
 
             embeds = []
             embeds_size = 0

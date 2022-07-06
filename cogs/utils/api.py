@@ -88,6 +88,18 @@ class API:
             except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
 
+    async def fetch_latest_post(self, game_id):
+        url = f'{self.api_baseurl}/{game_id}/posts'
+
+        async with ClientSession(headers=self.headers) as session:
+            try:
+                async with session.get(url) as resp:
+                    content = await resp.json()
+                    posts = content['data']
+                    return posts[0]
+            except ClientConnectorError as e:
+                logger.error('Connection Error', str(e))
+
     async def fetch_accounts(self, game_id):
         url = f'{self.api_baseurl}/{game_id}/accounts'
 

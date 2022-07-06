@@ -172,13 +172,14 @@ class Tracker(commands.Cog):
             game_channel_id = await ORM.get_game_channel(game_id, inter.guild_id)
             channel_id = game_channel_id or default_channel_id
             if channel_id:
-                msg += f" I'll post new entries in <#{channel_id}>"
+                msg += f" I'll post new entries in <#{channel_id}>. You should receive the last post in a few moments."
+                # Fetch last post to show everything is working as intended
+                await inter.edit_original_message(msg)
+                await self._fetch_last_post(game_id, inter.guild.get_channel(channel_id), inter.guild)
             else:
                 msg += " Please use `/dt-set-channel` to receive the latest posts."
-            await inter.edit_original_message(msg)
+                await inter.edit_original_message(msg)
 
-            # Restart Tracker main task to fetch first new post
-            self.resfresh_posts.restart()
 
     @commands.slash_command(name="dt-set-channel")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
@@ -226,7 +227,7 @@ class Tracker(commands.Cog):
                 await ORM.add_fw_game_channel(channel.id, inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as channel for `{game}`')
 
-            msg = f"<#{channel.id}> set as notification channel for `{game}`.\n"
+            msg = f"<#{channel.id}> set as notification channel for `{game}`. You should receive the last post shortly.\n"
 
             bot_member = inter.guild.get_member(self.bot.user.id)
             perms = channel.permissions_for(bot_member)
@@ -238,8 +239,8 @@ class Tracker(commands.Cog):
 
             await inter.edit_original_message(msg)
 
-            # Restart Tracker main task to fetch first new post
-            self.resfresh_posts.restart()
+            # Fetch last post to show everything is working as intended
+            await self._fetch_last_post(game_id, channel, inter.guild)
 
 
     @commands.slash_command(name="dt-mute-account", description="Ignore posts from a specific account.")
@@ -366,6 +367,20 @@ class Tracker(commands.Cog):
     # ---------------------------------------------------------------------------------
     # HELPERS
     # ---------------------------------------------------------------------------------
+
+    async def _fetch_last_post(self, game_id, channel, guild):
+
+        post = await API.fetch_latest_post(game_id)
+
+        if not post:
+            logger.error('API didnt returned anything !')
+            return
+
+        em = self._generate_embed(post)
+        post_id = post['id']
+        logger.info(f'{guild.name} [{guild.id}] : Fetching {post_id} for "{game_id}". (Dest: `#{channel.name}`)')
+        await channel.send(embed=em)
+        await ORM.set_last_post(post_id, guild.id, game_id)
 
     async def _fetch_fw(self):
         follows = await ORM.get_all_follows()

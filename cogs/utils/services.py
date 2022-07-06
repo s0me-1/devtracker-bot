@@ -37,7 +37,7 @@ CUSTOMIZERS = {
     },
     'rsi': {
         'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/spectr10.png',
-        'color': 2674940
+        'color': 3233415
     },
     'RSS': {
         'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/256px-10.png',

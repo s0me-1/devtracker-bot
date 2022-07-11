@@ -70,15 +70,14 @@ class API:
 
         async with ClientSession(headers=self.headers) as session:
             try:
-                timeout = ClientTimeout(total=10)
-                async with session.get(url, timeout=timeout) as resp:
+                async with session.get(url) as resp:
                     response = await resp.json()
                     logger.info(f'GET {url} {resp.status}')
                     posts = response['data']
                     return {game_id: posts}
 
             except asyncio.TimeoutError as e:
-                logger.warning(f'GET {url} TIMEOUT ({timeout})')
+                logger.warning(f'GET {url} TIMEOUT ({repr(e)})')
                 return {game_id: 'timeout'}
 
             except Exception as e:

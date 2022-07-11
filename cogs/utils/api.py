@@ -1,8 +1,9 @@
 import logging
 import time
+import aiohttp
 
 import sec
-from aiohttp import ClientSession, ClientConnectorError, ClientTimeout
+from aiohttp import ClientSession, ClientConnectorError, ClientTimeout, ContentTypeError
 import asyncio
 
 from cogs.utils import database as db
@@ -77,8 +78,12 @@ class API:
                     return {game_id: posts}
 
             except asyncio.TimeoutError as e:
-                logger.warning(f'GET {url} TIMEOUT ({session.timeout})')
+                logger.warning(f'GET {url} | Timeout ({session.timeout})')
                 return {game_id: 'timeout'}
+
+            except aiohttp.ContentTypeError as e:
+                logger.error(f'GET {url} | ContentTypeError: {e.message}')
+                return {game_id: 'content_type_error'}
 
             except Exception as e:
                 logger.error(f'Unhandled: {repr(e)}')

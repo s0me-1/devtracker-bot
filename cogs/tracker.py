@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 import re
 from datetime import datetime
@@ -405,17 +406,20 @@ class Tracker(commands.Cog):
         for r in res:
             posts.update(r)
 
-        timeouts = []
+        errors = defaultdict(list)
         for gid, g_res in posts.items():
             if isinstance(g_res, list):
                 nb_posts += len(posts[gid])
-            elif g_res == 'timeout':
-                timeouts.append(gid)
+            else:
+                errors[g_res].append(gid)
+        err_stats = ''
+        for error, gids in errors.items():
+            err_stats += f'{error}: {gids}'
+            for gid in gids:
+                posts.pop(gid)
 
-        for gid in timeouts:
-            posts.pop(gid)
-
-        logger.info(f'{nb_posts} posts retrieved ({len(timeouts)} games timeouted).')
+        err_msg = err_stats if err_stats else 'No errors.'
+        logger.info(f'{nb_posts} posts retrieved ({err_msg}).')
         return posts
 
     def _sanitize_post_content(self, post_content, origin=None):

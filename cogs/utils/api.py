@@ -82,7 +82,9 @@ class API:
                 return {game_id: 'timeout'}
 
             except aiohttp.ContentTypeError as e:
-                logger.error(f'GET {url} | ContentTypeError: {e.message} | API Probably crashed.')
+                # This likely means the API Endpoint crashed and gave
+                # an HTML fallback response instead of JSON.
+                logger.error(f'GET {url} | ContentTypeError: {e.message}.')
                 return {game_id: 'content_type_error'}
 
             except Exception as e:

@@ -106,7 +106,7 @@ class Tracker(commands.Cog):
 
                 # Stop if we reach the post has already been sent (FIFO)
                 if last_post_id == post['id']:
-                    logger.info(f'{guild_id}/{game_id}: {last_post_id} is the latest available.')
+                    logger.debug(f'{guild_id}/{game_id}: {last_post_id} is the latest available.')
                     break
 
                 logger.info(f"Processing: {guild_id} | {game_id} |#| {post['account']['identifier']} | [{post['id']}] {post['topic']}")

@@ -395,21 +395,23 @@ class Tracker(commands.Cog):
     async def _fetch_posts(self):
         fw_games_ids = await ORM.get_all_followed_games()
         nb_posts = 0
-        nb_timeouts = 0
         res = await API.fetch_all_posts(fw_games_ids)
 
         posts = {}
         for r in res:
             posts.update(r)
 
+        timeouts = []
         for gid, g_res in posts.items():
             if isinstance(g_res, list):
                 nb_posts += len(posts[gid])
             elif g_res == 'timeout':
-                nb_timeouts += 1
-                posts.pop(gid)
+                timeouts.append(gid)
 
-        logger.info(f'{nb_posts} posts retrieved ({nb_timeouts} games timeouted).')
+        for gid in timeouts:
+            posts.pop(gid)
+
+        logger.info(f'{nb_posts} posts retrieved ({len(timeouts)} games timeouted).')
         return posts
 
     def _sanitize_post_content(self, post_content, origin=None):

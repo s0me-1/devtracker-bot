@@ -82,7 +82,7 @@ class API:
                 return {game_id: 'timeout'}
 
             except aiohttp.ContentTypeError as e:
-                logger.error(f'GET {url} | ContentTypeError: {e.message}')
+                logger.error(f'GET {url} | ContentTypeError: {e.message} | API Probably crashed.')
                 return {game_id: 'content_type_error'}
 
             except Exception as e:

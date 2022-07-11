@@ -2,7 +2,7 @@ import logging
 import time
 
 import sec
-from aiohttp import ClientSession, ClientConnectorError
+from aiohttp import ClientSession, ClientConnectorError, ClientTimeout
 
 from cogs.utils import database as db
 ORM = db.ORM()
@@ -69,7 +69,8 @@ class API:
 
         async with ClientSession(headers=self.headers) as session:
             try:
-                async with session.get(url) as resp:
+                timeout = ClientTimeout(total=5)
+                async with session.get(url, timeout=timeout) as resp:
                     response = await resp.json()
                     logger.info(f'GET {url} {resp.status}')
                     posts = response['data']
@@ -77,6 +78,7 @@ class API:
 
             except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
+                return None
 
     async def fetch_post(self, post_id ,game_id):
         url = f'{self.api_baseurl}/{game_id}/posts'

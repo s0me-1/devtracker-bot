@@ -77,7 +77,7 @@ class API:
                     return {game_id: posts}
 
             except asyncio.TimeoutError as e:
-                logger.warning(f'GET {url} TIMEOUT ({repr(e)})')
+                logger.warning(f'GET {url} TIMEOUT ({session.timeout})')
                 return {game_id: 'timeout'}
 
             except Exception as e:

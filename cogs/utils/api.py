@@ -2,7 +2,8 @@ import logging
 import time
 
 import sec
-from aiohttp import ClientSession, ClientConnectorError, ClientTimeout
+from aiohttp import ClientSession, ClientConnectorError
+import asyncio
 
 from cogs.utils import database as db
 ORM = db.ORM()
@@ -69,15 +70,37 @@ class API:
 
         async with ClientSession(headers=self.headers) as session:
             try:
-                timeout = ClientTimeout(total=5)
+                timeout = ClientTimeout(total=10)
                 async with session.get(url, timeout=timeout) as resp:
                     response = await resp.json()
                     logger.info(f'GET {url} {resp.status}')
                     posts = response['data']
-                    return posts
+                    return {game_id: posts}
 
-            except ClientConnectorError as e:
-                logger.error('Connection Error', str(e))
+            except asyncio.TimeoutError as e:
+                logger.warning(f'GET {url} TIMEOUT ({timeout})')
+                return {game_id: 'timeout'}
+
+            except Exception as e:
+                logger.error(f'Unhandled: {repr(e)}')
+                return {game_id: e}
+
+    async def fetch_all_posts(self, game_ids):
+
+        timeout = ClientTimeout(total=300)
+        async with ClientSession(headers=self.headers, timeout=timeout) as session:
+            try:
+                res = await asyncio.gather(
+                *[
+                        self.fetch_posts(gid)
+                        for gid in game_ids
+                    ],
+                    return_exceptions=True
+                )
+                return res
+
+            except asyncio.TimeoutError as e:
+                logger.error(f'TIMEOUT: The Fetchs posts process took more than {timeout.total} seconds.')
                 return None
 
     async def fetch_post(self, post_id ,game_id):

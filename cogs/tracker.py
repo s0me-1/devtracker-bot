@@ -1,6 +1,5 @@
 import logging
 import re
-from collections import defaultdict
 from datetime import datetime
 
 from bs4 import BeautifulSoup, NavigableString
@@ -394,14 +393,23 @@ class Tracker(commands.Cog):
         return sorted(follows, key=lambda fw: fw[2])
 
     async def _fetch_posts(self):
-        posts = defaultdict(dict)
         fw_games_ids = await ORM.get_all_followed_games()
         nb_posts = 0
-        for gid in fw_games_ids:
-            posts[gid] = await API.fetch_posts(gid)
-            nb_posts += len(posts[gid])
+        nb_timeouts = 0
+        res = await API.fetch_all_posts(fw_games_ids)
 
-        logger.info(f'{nb_posts} posts retrieved.')
+        posts = {}
+        for r in res:
+            posts.update(r)
+
+        for gid, g_res in posts.items():
+            if isinstance(g_res, list):
+                nb_posts += len(posts[gid])
+            elif g_res == 'timeout':
+                nb_timeouts += 1
+                posts.pop(gid)
+
+        logger.info(f'{nb_posts} posts retrieved ({nb_timeouts} games timeouted).')
         return posts
 
     def _sanitize_post_content(self, post_content, origin=None):

@@ -1,6 +1,5 @@
 disnake
 aiohttp
-aiohttp-client-cache
 aiosqlite
 beautifulsoup4
 markdownify

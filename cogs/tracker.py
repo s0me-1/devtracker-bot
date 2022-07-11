@@ -96,10 +96,12 @@ class Tracker(commands.Cog):
 
             embeds = []
             embeds_size = 0
-            for post in posts[game_id]:
+            ordered_posts = sorted(posts[game_id], key=lambda p: p['timestamp'], reverse=True)
+            for post in ordered_posts:
 
                 # Stop if we reach the post has already been sent (FIFO)
                 if last_post_id == post['id']:
+                    logger.debug('Nothing to send.')
                     break
 
                 logger.info(f"Processing: {guild_id} | {game_id} |#| {post['account']['identifier']} | [{post['id']}] {post['topic']}")
@@ -124,10 +126,10 @@ class Tracker(commands.Cog):
                     break
 
             if embeds:
-                logger.info(f'Sending {len(embeds)} embeds from {len(posts[game_id])} posts.')
+                logger.info(f'Sending {len(embeds)} embeds from {len(ordered_posts)} posts.')
                 try:
                     await channel.send(embeds=embeds)
-                    post_id = posts[game_id][0]['id']
+                    post_id = ordered_posts[0]['id']
                     await ORM.set_last_post(post_id, guild_id, game_id)
                 except disnake.Forbidden:
                     logger.warning(f"Missing permissions for #{channel.name}")

@@ -3,8 +3,6 @@ import time
 
 import sec
 from aiohttp import ClientSession, ClientConnectorError
-from aiohttp_client_cache import CachedSession, SQLiteBackend
-
 
 from cogs.utils import database as db
 ORM = db.ORM()
@@ -17,8 +15,10 @@ class API:
 
     def __init__(self):
         self.token = sec.load('api_token')
-        self.cache = SQLiteBackend('api_cache', expire_after=60*3)
-        self.headers = {'Authorization': f'Bearer {self.token}'}
+        self.headers = {
+            'Authorization': f'Bearer {self.token}',
+            'Cache-Control': 'no-cache'
+        }
         self.api_baseurl =  sec.load('api_base')
 
     def __call__(cls, *args, **kwargs):
@@ -30,7 +30,7 @@ class API:
         url = f'{self.api_baseurl}/games'
         start = time.monotonic()
 
-        async with CachedSession(cache=self.cache, headers=self.headers) as session:
+        async with ClientSession(headers=self.headers) as session:
             try:
                 async with session.get(url) as resp:
                     await resp.json()
@@ -43,7 +43,7 @@ class API:
         url = f'{self.api_baseurl}/games'
         games = []
 
-        async with CachedSession(cache=self.cache, headers=self.headers) as session:
+        async with ClientSession(headers=self.headers) as session:
             try:
                 async with session.get(url) as resp:
                     response = await resp.json()
@@ -69,6 +69,7 @@ class API:
             try:
                 async with session.get(url) as resp:
                     response = await resp.json()
+                    logger.debug(f'GET {url} {resp.status}')
                     posts = response['data']
                     return posts
 
@@ -103,7 +104,7 @@ class API:
     async def fetch_accounts(self, game_id):
         url = f'{self.api_baseurl}/{game_id}/accounts'
 
-        async with CachedSession(cache=self.cache, headers=self.headers) as session:
+        async with ClientSession(headers=self.headers) as session:
             try:
                 async with session.get(url) as resp:
                     response = await resp.json()

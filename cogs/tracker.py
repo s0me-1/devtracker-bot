@@ -61,6 +61,10 @@ class Tracker(commands.Cog):
 
         all_ignored_accounts = await ORM.get_all_ignored_accounts()
 
+        if not posts:
+            logger.error("API didnt returned anything !")
+            return
+
         for last_post_id, channel_id, guild_id, game_id in ordered_fws:
             if not guild or guild.id != guild_id:
                 default_channel_id = await ORM.get_main_channel(guild_id)
@@ -90,9 +94,9 @@ class Tracker(commands.Cog):
                         logger.warning(f'{guild.owner.name} has blocked his DMs.')
                 continue
 
-            if not posts:
-                logger.error("API didnt returned anything !")
-                break
+            if not game_id in posts.keys():
+                logger.warning(f'No posts fetched for {game_id}.')
+                continue
 
             embeds = []
             embeds_size = 0

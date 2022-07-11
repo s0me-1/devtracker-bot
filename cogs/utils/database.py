@@ -330,7 +330,7 @@ class ORM:
                 async for row in cr:
                     followed_games_ids.add(row['followed_game_id'])
 
-            logger.debug(f'Followed Games: {followed_games_ids}')
+            logger.info(f'Followed Games: {followed_games_ids}')
             return followed_games_ids
 
     async def get_all_ignored_accounts(self):

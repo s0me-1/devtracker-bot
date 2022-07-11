@@ -2,7 +2,7 @@ import logging
 import time
 
 import sec
-from aiohttp import ClientSession, ClientConnectorError
+from aiohttp import ClientSession, ClientConnectorError, ClientTimeout
 import asyncio
 
 from cogs.utils import database as db

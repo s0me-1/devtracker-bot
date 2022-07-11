@@ -52,7 +52,7 @@ class Tracker(commands.Cog):
     @tasks.loop(minutes=5.0)
     async def resfresh_posts(self):
 
-        logger.debug('Refreshing posts.')
+        logger.info('Refreshing posts.')
         posts = await self._fetch_posts()
         ordered_fws = await self._fetch_fw()
 
@@ -69,6 +69,7 @@ class Tracker(commands.Cog):
 
             # Means the bot lost permissions for some reasons
             if not guild:
+                logger.warning(f'{guild_id} cant be found in the discord API !')
                 continue
 
             if channel_id:
@@ -101,7 +102,7 @@ class Tracker(commands.Cog):
 
                 # Stop if we reach the post has already been sent (FIFO)
                 if last_post_id == post['id']:
-                    logger.debug('Nothing to send.')
+                    logger.info(f'{guild_id}/{game_id}: {last_post_id} is the latest available.')
                     break
 
                 logger.info(f"Processing: {guild_id} | {game_id} |#| {post['account']['identifier']} | [{post['id']}] {post['topic']}")
@@ -388,14 +389,18 @@ class Tracker(commands.Cog):
         follows = await ORM.get_all_follows()
 
         # Minimize calls on DBs/Disnake per guilds
+        logger.info(f'{len(follows)} follows retrieved.')
         return sorted(follows, key=lambda fw: fw[2])
 
     async def _fetch_posts(self):
         posts = defaultdict(dict)
         fw_games_ids = await ORM.get_all_followed_games()
+        nb_posts = 0
         for gid in fw_games_ids:
             posts[gid] = await API.fetch_posts(gid)
+            nb_posts += len(posts[gid])
 
+        logger.info(f'{nb_posts} posts retrieved.')
         return posts
 
     def _sanitize_post_content(self, post_content, origin=None):

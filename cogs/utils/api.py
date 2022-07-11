@@ -69,7 +69,7 @@ class API:
             try:
                 async with session.get(url) as resp:
                     response = await resp.json()
-                    logger.debug(f'GET {url} {resp.status}')
+                    logger.info(f'GET {url} {resp.status}')
                     posts = response['data']
                     return posts
 

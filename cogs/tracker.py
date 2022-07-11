@@ -139,6 +139,7 @@ class Tracker(commands.Cog):
                         await default_channel.send(
                             f"I cant send the latest post for {game_id} in {channel.name}"
                         )
+        logger.info('Refresh task completed.')
 
     @resfresh_posts.before_loop
     async def before_refresh(self):

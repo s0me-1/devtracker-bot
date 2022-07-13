@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 import logging
 import re
@@ -49,7 +50,7 @@ class Tracker(commands.Cog):
     # TASKS
     # ---------------------------------------------------------------------------------
 
-    @tasks.loop(minutes=5.0)
+    @tasks.loop(minutes=2.0)
     async def resfresh_posts(self):
 
         logger.info('Refreshing posts.')
@@ -66,6 +67,7 @@ class Tracker(commands.Cog):
             logger.error("API didnt returned anything !")
             return
 
+        message_queue = []
         for last_post_id, channel_id, guild_id, game_id in ordered_fws:
             if not guild or guild.id != guild_id:
                 default_channel_id = await ORM.get_main_channel(guild_id)
@@ -99,6 +101,7 @@ class Tracker(commands.Cog):
                 logger.warning(f'No posts fetched for {game_id}.')
                 continue
 
+            messages = []
             embeds = []
             embeds_size = 0
             ordered_posts = sorted(posts[game_id], key=lambda p: p['timestamp'], reverse=True)
@@ -126,24 +129,38 @@ class Tracker(commands.Cog):
 
                 # Remove last embed if we're not repecting the Discords limits
                 if len(embeds) > EMBEDS_MAX_AMOUNT or embeds_size > EMBEDS_MAX_TOTAL:
-                    logger.warning("Discord Limits Reached, removing last embed.")
+                    logger.warning("Discord Limits Reached, creating a new message.")
                     embeds.pop()
-                    break
+                    messages.append({
+                        'embeds': embeds,
+                        'game_id': game_id
+                    })
+                    embeds = [em]
+                    embeds_size = len(em)
 
-            if embeds:
-                logger.info(f'Sending {len(embeds)} embeds from {len(ordered_posts)} posts.')
-                try:
-                    await channel.send(embeds=embeds)
-                    post_id = ordered_posts[0]['id']
-                    await ORM.set_last_post(post_id, guild_id, game_id)
-                except disnake.Forbidden:
-                    logger.warning(f"Missing permissions for #{channel.name}")
-                    if default_channel_id and default_channel_id != channel.id:
-                        default_channel = guild.get_channel(default_channel_id)
-                        await default_channel.send(
-                            f"I cant send the latest post for {game_id} in {channel.name}"
-                        )
+            if messages or embeds:
+                messages = [{'embeds': embeds, 'game_id': game_id}] if not messages else messages
+                message_queue.append((channel, messages, ordered_posts[0]['id']))
+            logger.info(f"{len(messages)} messages to send.")
+
+        await asyncio.gather(
+            *[
+                self._send_embeds(channel, messages, latest_post_id)
+                for channel, messages, latest_post_id in message_queue
+            ],
+        )
         logger.info('Refresh task completed.')
+
+    async def _send_embeds(self, channel: disnake.TextChannel, messages, last_post_id):
+        for msg in messages:
+            logger.info(f"{channel.guild.name} [{channel.guild.id}]: Sending {len(msg['embeds'])} embeds to {channel.name}.")
+            try:
+                await channel.send(embeds=msg['embeds'])
+                await ORM.set_last_post(last_post_id, channel.guild.id, msg['game_id'])
+
+            except disnake.Forbidden:
+                logger.warning(f"Missing permissions for #{channel.name}")
+                await channel.guild.owner.send(f"I don't have the permission to send the latest post for {msg['game_id']} in {channel.name}")
 
     @resfresh_posts.before_loop
     async def before_refresh(self):

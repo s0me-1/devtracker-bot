@@ -174,7 +174,7 @@ class ORM:
             return follows
 
     async def set_last_post(self, post_id, guild_id, game_id):
-        logger.info(f"{guild_id}: Set {post_id} as last `{game_id}` post.")
+        logger.debug(f"{guild_id}: Set {post_id} as last `{game_id}` post.")
         async with aiosqlite.connect(DB_FILE) as conn:
             await conn.set_trace_callback(logger.debug)
 

@@ -141,7 +141,7 @@ class Tracker(commands.Cog):
             if messages or embeds:
                 messages = [{'embeds': embeds, 'game_id': game_id}] if not messages else messages
                 message_queue.append((channel, messages, ordered_posts[0]['id']))
-            logger.info(f"{len(messages)} messages to send.")
+                logger.debug(f"{guild_id}/{game_id}: {len(messages)} messages to send.")
 
         await asyncio.gather(
             *[

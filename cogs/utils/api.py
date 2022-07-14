@@ -50,7 +50,7 @@ class API:
             try:
                 async with session.get(url) as resp:
                     response = await resp.json()
-                    logger.info(f'GET {url} {resp.status}')
+                    logger.debug(f'GET {url} {resp.status}')
                     games = response['data']
                     api_games_data = [(g['identifier'], g['name']) for g in games]
                     await ORM.update_local_games(api_games_data)
@@ -74,7 +74,7 @@ class API:
             try:
                 async with session.get(url) as resp:
                     response = await resp.json()
-                    logger.info(f'GET {url} {resp.status}')
+                    logger.debug(f'GET {url} {resp.status}')
                     posts = response['data']
                     return {game_id: posts}
 

@@ -36,7 +36,7 @@ class API:
             try:
                 async with session.get(url) as resp:
                     await resp.json()
-                    logger.info(f'GET {url} {resp.status}')
+                    logger.debug(f'GET {url} {resp.status}')
                     response_time = time.monotonic() - start
                     return resp.status, response_time
             except ClientConnectorError as e:
@@ -117,7 +117,7 @@ class API:
             try:
                 async with session.get(url) as resp:
                     content = await resp.json()
-                    logger.info(f'GET {url} {resp.status}')
+                    logger.debug(f'GET {url} {resp.status}')
                     posts = content['data']
                     post = [p for p in posts if p['id'] == post_id]
                     return post
@@ -131,7 +131,7 @@ class API:
             try:
                 async with session.get(url) as resp:
                     content = await resp.json()
-                    logger.info(f'GET {url} {resp.status}')
+                    logger.debug(f'GET {url} {resp.status}')
                     posts = content['data']
                     return posts[0]
             except ClientConnectorError as e:
@@ -144,7 +144,7 @@ class API:
             try:
                 async with session.get(url) as resp:
                     response = await resp.json()
-                    logger.info(f'GET {url} {resp.status}')
+                    logger.debug(f'GET {url} {resp.status}')
                     accounts = response['data']
                     return [a['identifier'] for a in accounts]
             except ClientConnectorError as e:

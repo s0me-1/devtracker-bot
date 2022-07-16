@@ -253,6 +253,9 @@ class Tracker(commands.Cog):
 
         msg = f"<#{channel.id}> set as default channel.\n"
 
+        all_follows = await ORM.get_follows(inter.guild.id)
+        new_follows = [fw for fw in all_follows if fw[1] == channel.id or not fw[1]]
+
         bot_member = inter.guild.get_member(self.bot.user.id)
         perms = channel.permissions_for(bot_member)
 
@@ -260,7 +263,16 @@ class Tracker(commands.Cog):
             msg += "It seems I'm not allowed to view this channel, please check my permissions."
         elif not perms.send_messages:
             msg += "It seems I'm not allowed to send message in this channel, please check my permissions."
+        else:
+            msg += "Fetching latest posts from your current followed games that didn't had a channel before..."
         await inter.edit_original_message(msg)
+
+        await asyncio.gather(
+            *[
+                self._fetch_last_post(game_id, channel, inter.guild)
+                for _, _, _, game_id in new_follows
+            ],
+        )
 
     @set_channel.sub_command(name="game", description="Set the notification channel per game. The game will be followed if it's not the case already.")
     async def set_game_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel, game_name: str = commands.Param(autocomplete=ac.games)):
@@ -464,7 +476,7 @@ class Tracker(commands.Cog):
     # HELPERS
     # ---------------------------------------------------------------------------------
 
-    async def _fetch_last_post(self, game_id, channel, guild):
+    async def _fetch_last_post(self, game_id, channel: disnake.TextChannel, guild: disnake.Guild):
 
         post = await API.fetch_latest_post(game_id)
 

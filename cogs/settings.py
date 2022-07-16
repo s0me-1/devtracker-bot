@@ -41,6 +41,7 @@ class Settings(commands.Cog):
         api_status_code, latency = await API.get_status()
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
+        version = f'v{self.bot.__getattribute__("__version__")}'
 
         description = "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n" \
             "Need any help ? You can find some here :\n" \
@@ -55,6 +56,7 @@ class Settings(commands.Cog):
         emb.set_author(name="⚙️ Current config")
         emb.add_field(name='Default Channel', value=chname, inline=True)
         emb.add_field(name=api_status, value=api_md, inline=True)
+        emb.add_field(name='Bot Version', value=version, inline=True)
         emb.add_field(name='📡 Followed Games', value=fw_tabs[0], inline=False)
 
         embeds = []

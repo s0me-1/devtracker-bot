@@ -3,6 +3,7 @@ from collections import defaultdict
 import logging
 import re
 from datetime import datetime
+from typing import Iterable
 
 from bs4 import BeautifulSoup, NavigableString
 import disnake
@@ -54,8 +55,10 @@ class Tracker(commands.Cog):
     async def resfresh_posts(self):
 
         logger.info('Refreshing posts.')
-        posts = await self._fetch_posts()
+        posts_per_gid = await self._fetch_posts()
         ordered_fws = await self._fetch_fw()
+        games = await API.fetch_available_games()
+        game_ids = [gid for gid in games.values()]
 
         guild = None
         channel = None
@@ -63,9 +66,38 @@ class Tracker(commands.Cog):
 
         all_ignored_accounts = await ORM.get_all_ignored_accounts()
 
-        if not posts:
+        if not posts_per_gid:
             logger.error("API didnt returned anything !")
             return
+
+        saved_post_ids_per_game = await ORM.get_saved_post_ids()
+        if not saved_post_ids_per_game:
+            logger.error("No saved post_ids detected ! Please init them with /dt-save-posts")
+            return
+
+        new_posts_per_gid = defaultdict(list)
+
+        if not games:
+            logger.error("No games found !")
+            return
+
+        for gid in game_ids:
+            if gid not in posts_per_gid.keys():
+                logger.warning(f"{gid} is in the available games but no posts were found.")
+                continue
+
+            ordered_posts = sorted(posts_per_gid[gid], key=lambda p: p['timestamp'], reverse=True)
+
+            current_post_ids = set([p['id'] for p in posts_per_gid[gid]])
+            saved_post_ids = set(saved_post_ids_per_game[gid])
+            new_post_ids = current_post_ids.difference(saved_post_ids)
+
+            if not new_post_ids:
+                logger.debug(f'{gid}: No new posts detected.')
+            else:
+                logger.info(f"{gid}: New posts detected ({new_post_ids}).")
+                new_posts_per_gid[gid] = list(filter(lambda p: p['id'] in new_post_ids, ordered_posts))
+
 
         message_queue = []
         for last_post_id, channel_id, guild_id, game_id in ordered_fws:
@@ -97,20 +129,15 @@ class Tracker(commands.Cog):
                         logger.warning(f'{guild.owner.name} has blocked his DMs.')
                 continue
 
-            if not game_id in posts.keys():
-                logger.warning(f'No posts fetched for {game_id}.')
+            if not game_id in new_posts_per_gid.keys():
+                logger.debug(f'No new posts for {game_id}.')
                 continue
 
             messages = []
             embeds = []
             embeds_size = 0
-            ordered_posts = sorted(posts[game_id], key=lambda p: p['timestamp'], reverse=True)
-            for post in ordered_posts:
 
-                # Stop if we reach the post has already been sent (FIFO)
-                if last_post_id == post['id']:
-                    logger.debug(f'{guild_id}/{game_id}: {last_post_id} is the latest available.')
-                    break
+            for post in new_posts_per_gid[game_id]:
 
                 logger.info(f"Processing: {guild_id} | {game_id} |#| {post['account']['identifier']} | [{post['id']}] {post['topic']}")
 
@@ -122,10 +149,6 @@ class Tracker(commands.Cog):
                 em = self._generate_embed(post)
                 embeds.append(em)
                 embeds_size += len(em)
-
-                # Only send the last post if none was sent before
-                if not last_post_id:
-                    break
 
                 # Remove last embed if we're not repecting the Discords limits
                 if len(embeds) > EMBEDS_MAX_AMOUNT or embeds_size > EMBEDS_MAX_TOTAL:
@@ -149,6 +172,15 @@ class Tracker(commands.Cog):
                 for channel, messages, latest_post_id in message_queue
             ],
         )
+
+        if new_posts_per_gid:
+            logger.info(f"Updating posts state for {new_posts_per_gid.keys()}")
+            await asyncio.gather(
+                *[
+                    ORM.set_saved_post_ids(gid, [p['id'] for p in posts_per_gid[gid]])
+                    for gid in new_posts_per_gid.keys()
+                ],
+            )
         logger.info('Refresh task completed.')
 
     async def _send_embeds(self, channel: disnake.TextChannel, messages, last_post_id):
@@ -175,24 +207,24 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-follow", description="Add a game to follow.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def follow_game(self, inter : disnake.AppCommandInteraction, game: str = commands.Param(autocomplete=ac.games)):
+    async def follow_game(self, inter : disnake.AppCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games)):
 
         await inter.response.defer()
 
-        game_ids = await API.fetch_available_games()
-        if not game_ids:
+        games = await API.fetch_available_games()
+        if not games:
             await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
             return
 
-        if game not in game_ids.keys():
-            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
+        if game_name not in games.keys():
+            await inter.edit_original_message(f"`{game_name}` is either an invalid game or unsupported.")
         else:
-            game_id = game_ids[game]
+            game_id = games[game_name]
 
             await ORM.add_followed_game(game_id, inter.guild_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{game_id}" followed')
 
-            msg = f'`{game}` has been added to following list.'
+            msg = f'`{game_name}` has been added to following list.'
             default_channel_id = await ORM.get_main_channel(inter.guild_id)
             game_channel_id = await ORM.get_game_channel(game_id, inter.guild_id)
             channel_id = game_channel_id or default_channel_id
@@ -231,28 +263,28 @@ class Tracker(commands.Cog):
         await inter.edit_original_message(msg)
 
     @set_channel.sub_command(name="game", description="Set the notification channel per game. The game will be followed if it's not the case already.")
-    async def set_game_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel, game: str = commands.Param(autocomplete=ac.games)):
+    async def set_game_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel, game_name: str = commands.Param(autocomplete=ac.games)):
 
         await inter.response.defer()
 
-        game_ids = await API.fetch_available_games()
-        if not game_ids:
+        games = await API.fetch_available_games()
+        if not games:
             await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
             return
 
-        if game not in game_ids.keys():
-            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
+        if game_name not in games.keys():
+            await inter.edit_original_message(f"`{game_name}` is either an invalid game or unsupported.")
         else:
-            game_id = game_ids[game]
+            game_id = games[game_name]
 
             fw = await ORM.get_follow(inter.guild_id, game_id)
             if fw:
                 await ORM.set_game_channel(channel.id, inter.guild_id, game_id)
             else:
                 await ORM.add_fw_game_channel(channel.id, inter.guild_id, game_id)
-            logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as channel for `{game}`')
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as channel for `{game_name}`')
 
-            msg = f"<#{channel.id}> set as notification channel for `{game}`. You should receive the last post shortly.\n"
+            msg = f"<#{channel.id}> set as notification channel for `{game_name}`. You should receive the last post shortly.\n"
 
             bot_member = inter.guild.get_member(self.bot.user.id)
             perms = channel.permissions_for(bot_member)
@@ -270,22 +302,22 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-mute-account", description="Ignore posts from a specific account.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def mute_account(self, inter: disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games), account_id: str = commands.Param(autocomplete=ac.accounts_all)):
+    async def mute_account(self, inter: disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games), account_id: str = commands.Param(autocomplete=ac.accounts_all)):
 
         await inter.response.defer()
 
-        game_ids = await API.fetch_available_games()
-        if not game_ids:
+        games = await API.fetch_available_games()
+        if not games:
             await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
             return
 
-        if game not in game_ids.keys():
-            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
+        if game_name not in games.keys():
+            await inter.edit_original_message(f"`{game_name}` is either an invalid game or unsupported.")
         else:
-            game_id = game_ids[game]
+            game_id = games[game_name]
             account_ids = await API.fetch_accounts(game_id)
             if account_id not in account_ids:
-                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for {game}.")
+                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for {game_name}.")
             else:
                 await ORM.add_ignored_account(inter.guild_id, account_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" muted')
@@ -364,16 +396,16 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-force-send-post", description="[TECHNICAL] Debug bad formatted messages.", guild_ids=[687999396612407341])
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def force_fetch_last_post(self, inter : disnake.ApplicationCommandInteraction, post_id: str, game: str = commands.Param(autocomplete=ac.games)):
+    async def force_fetch_last_post(self, inter : disnake.ApplicationCommandInteraction, post_id: str, game_name: str = commands.Param(autocomplete=ac.games)):
 
         await inter.response.defer()
 
         logger.info(f'Forcing fetch of {post_id}.')
-        game_ids = await API.fetch_available_games()
-        if game not in game_ids.keys():
-            await inter.edit_original_message(f"`{game}` is either an invalid game or unsupported.")
+        games = await API.fetch_available_games()
+        if game_name not in games.keys():
+            await inter.edit_original_message(f"`{game_name}` is either an invalid game or unsupported.")
         else:
-            game_id = game_ids[game]
+            game_id = games[game_name]
             post = await API.fetch_post(post_id, game_id)
 
             if not post:
@@ -388,6 +420,45 @@ class Tracker(commands.Cog):
             else:
                 em = self._generate_embed(post[0])
                 await inter.edit_original_message(embed=em)
+
+    @commands.slash_command(name="dt-save-post-ids", description="Update posts state of the Bot.", guild_ids=[984016998084247582, 687999396612407341])
+    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
+    async def set_current_post_ids(self, inter : disnake.ApplicationCommandInteraction):
+
+        await inter.response.defer()
+        posts_per_game = await self._fetch_posts()
+        games = await API.fetch_available_games()
+        game_ids = [gid for gid in games.values()]
+
+        if not all([gid in posts_per_game.keys() for gid in game_ids]):
+            await inter.edit_original_message("Couldn't fetch all games (API Errors encountered). Aborting...")
+            return
+
+        for game_id, posts in posts_per_game.items():
+            post_ids = [p['id'] for p in posts]
+            logger.info(f"{game_id}: Updating posts state.")
+            logger.debug(post_ids)
+            await ORM.set_saved_post_ids(game_id, post_ids)
+
+        await inter.edit_original_message("current `post_ids` saved successfully")
+
+    @commands.slash_command(name="dt-get-post-ids", description="Show the bot state.", guild_ids=[984016998084247582, 687999396612407341])
+    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
+    async def get_saved_post_ids(self, inter : disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games)):
+
+        await inter.response.defer()
+        games = await API.fetch_available_games()
+        gid = games[game_name]
+        saved_post_ids = await ORM.get_saved_post_ids()
+
+        msg = '```\n'
+        for post_id in saved_post_ids[gid]:
+            msg += f'{post_id}\n'
+        msg += '```'
+
+        em = disnake.Embed(description=msg, title=game_name)
+
+        await inter.edit_original_message(embed=em)
 
     # ---------------------------------------------------------------------------------
     # HELPERS
@@ -415,9 +486,10 @@ class Tracker(commands.Cog):
         return sorted(follows, key=lambda fw: fw[2])
 
     async def _fetch_posts(self):
-        fw_games_ids = await ORM.get_all_followed_games()
+        games = await API.fetch_available_games()
+        game_ids = [gid for gid in games.values()]
         nb_posts = 0
-        res = await API.fetch_all_posts(fw_games_ids)
+        res = await API.fetch_all_posts(game_ids)
 
         posts = {}
         for r in res:

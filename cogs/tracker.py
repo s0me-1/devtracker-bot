@@ -59,6 +59,7 @@ class Tracker(commands.Cog):
         ordered_fws = await self._fetch_fw()
         games = await API.fetch_available_games()
         game_ids = [gid for gid in games.values()]
+        fw_game_ids = await ORM.get_all_followed_games()
 
         guild = None
         channel = None
@@ -75,11 +76,11 @@ class Tracker(commands.Cog):
             logger.error("No saved post_ids detected ! Please init them with /dt-save-posts")
             return
 
-        new_posts_per_gid = defaultdict(list)
-
         if not games:
             logger.error("No games found !")
             return
+
+        embeds_per_gid = defaultdict(list)
 
         for gid in game_ids:
             if gid not in posts_per_gid.keys():
@@ -96,7 +97,16 @@ class Tracker(commands.Cog):
                 logger.debug(f'{gid}: No new posts detected.')
             else:
                 logger.info(f"{gid}: New posts detected ({new_post_ids}).")
-                new_posts_per_gid[gid] = list(filter(lambda p: p['id'] in new_post_ids, ordered_posts))
+                new_posts = list(filter(lambda p: p['id'] in new_post_ids, ordered_posts))
+
+                for post in new_posts:
+                    if gid not in fw_game_ids:
+                        logger.info(f"Ignoring {gid} because it isnt followed by anyone.")
+                        continue
+
+                    logger.info(f"Processing: [{gid}] {post['account']['identifier']} | {post['topic']} [{post['id']}] ")
+                    em = self._generate_embed(post)
+                    embeds_per_gid[gid].append((em, post['account']['identifier']))
 
 
         message_queue = []
@@ -129,7 +139,7 @@ class Tracker(commands.Cog):
                         logger.warning(f'{guild.owner.name} has blocked his DMs.')
                 continue
 
-            if not game_id in new_posts_per_gid.keys():
+            if not game_id in embeds_per_gid.keys():
                 logger.debug(f'No new posts for {game_id}.')
                 continue
 
@@ -137,16 +147,13 @@ class Tracker(commands.Cog):
             embeds = []
             embeds_size = 0
 
-            for post in new_posts_per_gid[game_id]:
-
-                logger.info(f"Processing: {guild_id} | {game_id} |#| {post['account']['identifier']} | [{post['id']}] {post['topic']}")
+            for em, account_id in embeds_per_gid[game_id]:
 
                 # Skip the post if the guild wanted to ignore the author
-                if post['account']['identifier'] in all_ignored_accounts[guild_id]:
+                if account_id in all_ignored_accounts[guild_id]:
                     logger.info(f"Skipped. ({post['account']['identifier']} is in the ignore list).")
                     continue
 
-                em = self._generate_embed(post)
                 embeds.append(em)
                 embeds_size += len(em)
 
@@ -173,12 +180,12 @@ class Tracker(commands.Cog):
             ],
         )
 
-        if new_posts_per_gid:
-            logger.info(f"Updating posts state for {new_posts_per_gid.keys()}")
+        if embeds_per_gid:
+            logger.info(f"Updating posts state for {embeds_per_gid.keys()}")
             await asyncio.gather(
                 *[
                     ORM.set_saved_post_ids(gid, [p['id'] for p in posts_per_gid[gid]])
-                    for gid in new_posts_per_gid.keys()
+                    for gid in embeds_per_gid.keys()
                 ],
             )
         logger.info('Refresh task completed.')

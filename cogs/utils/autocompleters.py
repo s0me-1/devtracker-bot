@@ -26,9 +26,9 @@ async def games_fw(inter: disnake.ApplicationCommandInteraction, user_input: str
 
 async def accounts_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await API.fetch_available_games()
-    if inter.options['game'] not in games.keys():
+    if inter.options['game_name'] not in games.keys():
         return ['[ERROR] Invalid game provided']
-    game_id = games[inter.options['game']]
+    game_id = games[inter.options['game_name']]
     account_ids = await API.fetch_accounts(game_id)
     max_list = [acc_id for acc_id in account_ids if user_input.lower() in acc_id.lower()]
     return max_list[0:24]

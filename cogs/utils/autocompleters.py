@@ -15,8 +15,8 @@ ORM = db.ORM()
 # so auto-completers can't return more than 25 elements
 
 async def games(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    game_ids = await API.fetch_available_games()
-    max_list = [g for g in game_ids.keys() if user_input.lower() in g.lower()]
+    games = await API.fetch_available_games()
+    max_list = [g for g in games.keys() if user_input.lower() in g.lower()]
     return max_list[0:24]
 
 async def games_fw(inter: disnake.ApplicationCommandInteraction, user_input: str):
@@ -25,10 +25,10 @@ async def games_fw(inter: disnake.ApplicationCommandInteraction, user_input: str
     return max_list[0:24]
 
 async def accounts_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    game_ids = await API.fetch_available_games()
-    if inter.options['game'] not in game_ids.keys():
+    games = await API.fetch_available_games()
+    if inter.options['game'] not in games.keys():
         return ['[ERROR] Invalid game provided']
-    game_id = game_ids[inter.options['game']]
+    game_id = games[inter.options['game']]
     account_ids = await API.fetch_accounts(game_id)
     max_list = [acc_id for acc_id in account_ids if user_input.lower() in acc_id.lower()]
     return max_list[0:24]

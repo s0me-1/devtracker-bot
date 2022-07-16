@@ -50,6 +50,13 @@ class ORM:
                     PRIMARY KEY (account_id, follower_guild_id)
                 );
             ''')
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS posts (
+                    game_id NVARCHAR NOT NULL,
+                    post_id NVARCHAR NOT NULL,
+                    FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE
+                );
+            ''')
             await conn.commit()
 
     async def add_guild(self, guild_id):
@@ -385,6 +392,32 @@ class ORM:
             await conn.execute(query, params)
             await conn.commit()
 
+    async def get_saved_post_ids(self):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT * FROM posts;"
+
+            saved_posts = defaultdict(list)
+            async with conn.execute(query) as cr:
+                async for row in cr:
+                    saved_posts[row['game_id']].append(row['post_id'])
+            return saved_posts
+
+    async def set_saved_post_ids(self, game_id: int, post_ids: list):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "DELETE FROM posts WHERE game_id = ?;"
+            params = (game_id,)
+            await conn.execute(query, params)
+
+            query = "INSERT INTO posts VALUES (?, ?);"
+            params = [(game_id, post_id) for post_id in post_ids]
+            await conn.executemany(query, params)
+            await conn.commit()
 
     async def close_connection(self):
         async with aiosqlite.connect(DB_FILE) as conn:

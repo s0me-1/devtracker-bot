@@ -51,7 +51,7 @@ class Tracker(commands.Cog):
     # TASKS
     # ---------------------------------------------------------------------------------
 
-    @tasks.loop(minutes=2.0)
+    @tasks.loop(seconds=30)
     async def resfresh_posts(self):
 
         logger.info('Refreshing posts.')
@@ -199,7 +199,12 @@ class Tracker(commands.Cog):
 
             except disnake.Forbidden:
                 logger.warning(f"Missing permissions for #{channel.name}")
-                await channel.guild.owner.send(f"I don't have the permission to send the latest post for {msg['game_id']} in {channel.name}")
+                if not channel.guild.owner:
+                    continue
+                try:
+                    await channel.guild.owner.send(f"I don't have the permission to send the latest post for {msg['game_id']} in {channel.name}")
+                except disnake.Forbidden:
+                    logger.warning(f'{channel.guild.name}[{channel.guild.id}]: Owner "{channel.guild.owner}" cannot be contacted (Forbidden) ')
 
     @resfresh_posts.before_loop
     async def before_refresh(self):

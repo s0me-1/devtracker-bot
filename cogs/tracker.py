@@ -582,17 +582,38 @@ class Tracker(commands.Cog):
                 bq_ps = bq.findAll('p')
 
                 if len(bq_ps) < 2:
-                    ellipsis = soup.new_tag('blockquote')
 
-                    nb_char_stripped += len(bqs[-1].text) - 5
+                    # Prevent useless loop
+                    if len(bqs) < 1:
+                        nb_blocquotes = 0
+                        break
+
                     if bqs[-1].string == '[...]':
                         bqs[-1].decompose()
                         nb_blocquotes -= 1
-                    else:
+                        nb_char_stripped += 5
+                        logger.debug(f"{nb_char_stripped} chars stripped.")
+                        bqs = soup.find_all('blockquote')
+                        nb_blocquotes = len(bqs)
+                    elif len(bqs) > 1:
                         ellipsis = soup.new_tag('blockquote')
                         ellipsis.string = '[...]'
-                        bqs[-1].clear()
-                        bqs[-1].append('[...]')
+                        nb_char_stripped += len(bqs[-1].text) - 5
+                        bqs[-1].decompose()
+                        bqs[-2].insert_after(ellipsis)
+                        logger.debug(f"{nb_char_stripped} chars stripped.")
+                        bqs = soup.find_all('blockquote')
+                        nb_blocquotes = len(bqs)
+                    elif len(bqs) == 1:
+                        nb_char_stripped += len(bqs[-1].text)
+                        bqs[-1].decompose()
+                        bqs = soup.find_all('blockquote')
+                        nb_blocquotes = 0
+                        break
+                    else:
+                        logger.error("Useless stripping loop !")
+                        break
+
                     continue
 
                 ellipsis = soup.new_tag('p')

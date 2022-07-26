@@ -32,11 +32,23 @@ class Settings(commands.Cog):
 
         default_channel_id = await ORM.get_main_channel(inter.guild_id)
 
-        chname = f'<#{default_channel_id}>' if default_channel_id else 'Not set'
+        chname = 'Not set'
+
+        if default_channel_id:
+            error_msg = ''
+            bot_member = inter.guild.get_member(self.bot.user.id)
+            channel = inter.guild.get_channel(default_channel_id)
+            perms = channel.permissions_for(bot_member)
+            if not perms.view_channel:
+                error_msg = "**[ERROR]** Missing `View Channel` Permission"
+            if not perms.send_messages:
+                error_msg = "**[ERROR]** Missing `Send Message` Channel Permission"
+            chname = f'<#{default_channel_id}> {error_msg}' if error_msg else f'<#{default_channel_id}>'
+
         api_md = "[DeveloperTracker.com](https://developertracker.com/)\n" +  u'\u200B'
         fw_status = await ORM.get_follow_status(inter.guild_id)
         ignored_accounts = await ORM.get_ignored_accounts(inter.guild_id)
-        fw_tabs = self._generate_fw_table(fw_status)
+        fw_tabs = self._generate_fw_table(fw_status, inter.guild)
         acc_tabs = self._generate_ignored_acc_table(ignored_accounts)
         api_status_code, latency = await API.get_status()
         emoji = "✅" if api_status_code == 200 else "❌"
@@ -81,7 +93,7 @@ class Settings(commands.Cog):
     # ---------------------------------------------------------------------------------
     # HELPERS
     # ---------------------------------------------------------------------------------
-    def _generate_fw_table(self, fw_status):
+    def _generate_fw_table(self, fw_status, guild: disnake.Guild):
 
         if not fw_status:
             return ['None\n']
@@ -92,12 +104,27 @@ class Settings(commands.Cog):
         max_fw = max(fw_status,key=lambda fw: len(fw[1]))
         lg = len(max_fw[1])
         for gid, gname, game_ch_id, last_post_id in fw_status:
+
             fw_line = ''
             offset = lg - len(gname)
             fw_line += f"`{gname}"
             fw_line += " "*offset
             if game_ch_id:
-                fw_line += f"`  |  <#{game_ch_id}> - [{last_post_id}](https://developertracker.com/{gid}/?post={last_post_id})\n"
+
+                error_msg = ''
+                bot_member = guild.get_member(self.bot.user.id)
+                channel = guild.get_channel(game_ch_id)
+                perms = channel.permissions_for(bot_member)
+
+                if not perms.view_channel:
+                    error_msg = "**[ERROR]** Missing `View Channel` Permission"
+                if not perms.send_messages:
+                    error_msg = "**[ERROR]** Missing `Send Message` Channel Permission"
+
+                if not error_msg:
+                    fw_line += f"`  |  <#{game_ch_id}> - [{last_post_id}](https://developertracker.com/{gid}/?post={last_post_id})\n"
+                else:
+                    fw_line += f"`  |  <#{game_ch_id}> - {error_msg}\n"
             else:
                  fw_line += f"` |  \n"
 

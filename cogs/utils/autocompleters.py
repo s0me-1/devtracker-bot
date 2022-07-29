@@ -26,14 +26,38 @@ async def games_fw(inter: disnake.ApplicationCommandInteraction, user_input: str
 
 async def accounts_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await API.fetch_available_games()
-    if inter.options['game_name'] not in games.keys():
+    if inter.options['account']['game_name'] not in games.keys():
         return ['[ERROR] Invalid game provided']
-    game_id = games[inter.options['game_name']]
+    game_id = games[inter.options['account']['game_name']]
     account_ids = await API.fetch_accounts(game_id)
     max_list = [acc_id for acc_id in account_ids if user_input.lower() in acc_id.lower()]
     return max_list[0:24]
 
 async def accounts_ignored(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    account_ids = await ORM.get_ignored_accounts(inter.guild_id)
+    games = await ORM.get_followed_games(inter.guild_id)
+    if inter.options['account']['game_name'] not in games.keys():
+        return ['[ERROR] Invalid game provided']
+    game_id = games[inter.options['account']['game_name']]
+
+    account_ids = await ORM.get_ignored_accounts(inter.guild_id, game_id)
     max_list = [acc_id for acc_id in account_ids if user_input.lower() in acc_id.lower()]
+    return max_list[0:24]
+
+async def services_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
+    games = await API.fetch_available_games()
+    if inter.options['service']['game_name'] not in games.keys():
+        return ['[ERROR] Invalid game provided']
+    game_id = games[inter.options['service']['game_name']]
+    service_ids = await API.fetch_services(game_id)
+    max_list = [serv_id for serv_id in service_ids if user_input.lower() in serv_id.lower()]
+    return max_list[0:24]
+
+async def service_ignored(inter: disnake.ApplicationCommandInteraction, user_input: str):
+    games = await ORM.get_followed_games(inter.guild_id)
+    if inter.options['service']['game_name'] not in games.keys():
+        return ['[ERROR] Invalid game provided']
+    game_id = games[inter.options['service']['game_name']]
+
+    service_ids = await ORM.get_ignored_services(inter.guild_id, game_id)
+    max_list = [serv_id for serv_id in service_ids if user_input.lower() in serv_id.lower()]
     return max_list[0:24]

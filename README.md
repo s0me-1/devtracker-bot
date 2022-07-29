@@ -109,16 +109,34 @@ Each Slash Command has **autofillers** to help you.
 
 ### Ignore posts from a specific account
 
-You'll find the account ID in the footer of each post
+You'll find the account ID in the footer of each post.
 ```console
-/dt-mute-account game:Rainbow 6: Siege account_id:76561198137855828
+/dt-mute account game:Rainbow 6: Siege account_id:76561198137855828
 ```
+Please note that the account will be muted only for the selected game.
+
+### Ignore posts from a specific service
+
+If you want to completely ignore posts from a whole service (e.g. Twitter)
+```console
+/dt-mute service game:Rainbow 6: Siege service_id:Twitter
+```
+Please note that the service will be muted only for the selected game.
 
 ### Unmute a specific account
 
-You can find the account you have ignored with the `/dt-status` slash command.
+Alongside the `/dt-mute` commands, you basically have their `/dt-unmute` conterparts.
+
+You can find the accounts you have ignored with the `/dt-status` slash command.
 ```console
-/dt-mute-account account_id:76561198137855828
+/dt-unmute account game:Star Citizen account_id:76561198137855828
+```
+
+### Unmute a specific service
+
+You can find the services you have ignored with the `/dt-status` slash command.
+```console
+/dt-unmute service game:Star Citizen service_id:Twitter
 ```
 ### Get current configuration
 

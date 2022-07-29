@@ -47,9 +47,19 @@ class Settings(commands.Cog):
 
         api_md = "[DeveloperTracker.com](https://developertracker.com/)\n" +  u'\u200B'
         fw_status = await ORM.get_follow_status(inter.guild_id)
-        ignored_accounts = await ORM.get_ignored_accounts(inter.guild_id)
+        ignored_accounts = await ORM.get_ignored_accounts_per_game(inter.guild_id)
+        ignored_services = await ORM.get_ignored_services_per_game(inter.guild_id)
         fw_tabs = self._generate_fw_table(fw_status, inter.guild)
-        acc_tabs = self._generate_ignored_acc_table(ignored_accounts)
+
+        local_game_data = await ORM.get_local_games()
+        games = {}
+        for g in local_game_data:
+            games.update({
+                g[0]: g[1]
+            })
+
+        acc_tabs = self._generate_ignored_table(games, ignored_accounts)
+        serv_tabs = self._generate_ignored_table(games, ignored_services)
         api_status_code, latency = await API.get_status()
         emoji = "✅" if api_status_code == 200 else "❌"
         api_status = f"API Status - {emoji} ({api_status_code})"
@@ -85,6 +95,13 @@ class Settings(commands.Cog):
                 color=7506394
             )
             emb.add_field(name='🔇 Ignored accounts', value=acc_tab, inline=False)
+            embeds.append(emb)
+
+        for serv_tab in serv_tabs:
+            emb = disnake.Embed(
+                color=7506394
+            )
+            emb.add_field(name='🔇 Ignored services', value=serv_tab, inline=False)
             embeds.append(emb)
 
         # Max 10 embeds can be sent at once
@@ -140,25 +157,27 @@ class Settings(commands.Cog):
 
         return fw_tabs
 
-    def _generate_ignored_acc_table(self, ignored_accounts):
+    def _generate_ignored_table(self, games, ignored_data):
 
-        if not ignored_accounts:
+        if not ignored_data:
             return ['None\n']
 
-        acc_tabs = []
-        acc_tab = ''
-        for acc_id in ignored_accounts:
-            acc_line = f' - `{acc_id}`\n'
+        ign_tabs = []
+        ign_tab = ''
+        for gid, igns in ignored_data.items():
+            ign_tab += f'\n**{games[gid]}**\n'
+            for ign in igns:
+                ign_line = f' - `{ign}`\n'
 
-            if len(acc_line) + len(acc_tab) > 1024:
-                acc_tabs.append(acc_tab)
-                acc_tab = ''
+                if len(ign_line) + len(ign_tab) > 1024:
+                    ign_tabs.append(ign_tab)
+                    ign_tab = ''
 
-            acc_tab += acc_line
+                ign_tab += ign_line
 
-        acc_tabs.append(acc_tab)
+        ign_tabs.append(ign_tab)
 
-        return acc_tabs
+        return ign_tabs
 
 
 def setup(bot: commands.Bot):

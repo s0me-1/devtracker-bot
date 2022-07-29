@@ -43,11 +43,23 @@ class ORM:
                 );
             ''')
             await conn.execute('''
-                CREATE TABLE IF NOT EXISTS ignored_accounts (
-                    account_id NVARCHAR NOT NULL,
+                CREATE TABLE IF NOT EXISTS ignored_services (
                     follower_guild_id NOT NULL,
+                    game_id NOT NULL,
+                    service_id NOT NULL,
                     FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE
-                    PRIMARY KEY (account_id, follower_guild_id)
+                    FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE
+                    PRIMARY KEY (follower_guild_id, game_id, service_id)
+                );
+            ''')
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS ignored_accounts (
+                    follower_guild_id NOT NULL,
+                    game_id NOT NULL,
+                    account_id NOT NULL,
+                    FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE
+                    FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE
+                    PRIMARY KEY (follower_guild_id, game_id, account_id)
                 );
             ''')
             await conn.execute('''
@@ -345,49 +357,140 @@ class ORM:
         async with aiosqlite.connect(DB_FILE) as conn:
             await conn.set_trace_callback(logger.debug)
 
-            query = "SELECT account_id,follower_guild_id FROM ignored_accounts;"
+            query = "SELECT follower_guild_id,game_id,account_id FROM ignored_accounts;"
 
             ignored_accounts = []
             async with conn.execute(query) as cr:
                 async for row in cr:
                     ignored_accounts.append(tuple(row))
 
-            ignored_per_guild = defaultdict(list)
-            for account_id, guild_id in ignored_accounts:
-                ignored_per_guild[guild_id].append(account_id)
+            ignored_per_guild = defaultdict(lambda: defaultdict(list))
+            for guild_id, game_id, account_id in ignored_accounts:
+                ignored_per_guild[guild_id][game_id].append(account_id)
 
             return ignored_per_guild
 
-    async def add_ignored_account(self, guild_id, account_id):
+    async def get_all_ignored_services(self):
         async with aiosqlite.connect(DB_FILE) as conn:
             await conn.set_trace_callback(logger.debug)
 
-            query = "INSERT OR IGNORE INTO ignored_accounts ('account_id', 'follower_guild_id') VALUES (?, ?);"
-            params = (account_id, guild_id)
+            query = "SELECT follower_guild_id,game_id,service_id FROM ignored_services;"
+
+            ignored_services = []
+            async with conn.execute(query) as cr:
+                async for row in cr:
+                    ignored_services.append(tuple(row))
+
+            ignored_per_guild = defaultdict(lambda: defaultdict(list))
+            for guild_id, game_id, service_id in ignored_services:
+                ignored_per_guild[guild_id][game_id].append(service_id)
+
+            return ignored_per_guild
+
+    async def add_ignored_account(self, guild_id, game_id, account_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            await conn.set_trace_callback(logger.debug)
+
+            query = "INSERT OR IGNORE INTO ignored_accounts ('follower_guild_id', 'game_id', 'account_id') VALUES (?, ?, ?);"
+            params = (guild_id, game_id, account_id)
 
             await conn.execute(query, params)
             await conn.commit()
 
-    async def get_ignored_accounts(self, guild_id):
+    async def add_ignored_service(self, guild_id, game_id, service_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            await conn.set_trace_callback(logger.debug)
+
+            query = "INSERT OR IGNORE INTO ignored_services ('follower_guild_id', 'game_id', 'service_id') VALUES (?, ?, ?);"
+            params = (guild_id, game_id, service_id)
+
+            await conn.execute(query, params)
+            await conn.commit()
+
+    async def get_ignored_accounts(self, guild_id, game_id):
         async with aiosqlite.connect(DB_FILE) as conn:
             conn.row_factory = aiosqlite.Row
             await conn.set_trace_callback(logger.debug)
 
-            query = "SELECT account_id FROM ignored_accounts WHERE follower_guild_id = ? ;"
-            params = (guild_id,)
+            query = "SELECT account_id FROM ignored_accounts WHERE follower_guild_id = ? AND game_id = ? ;"
+            params = (guild_id, game_id)
 
             ignored_accounts = []
             async with conn.execute(query, params) as cr:
                 async for row in cr:
                     ignored_accounts.append(row['account_id'])
+
             return ignored_accounts
 
-    async def rm_ignored_account(self, guild_id, account_id):
+    async def get_ignored_services(self, guild_id, game_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT service_id FROM ignored_services WHERE follower_guild_id = ? AND game_id = ? ;"
+            params = (guild_id, game_id)
+
+            ignored_services = []
+            async with conn.execute(query, params) as cr:
+                async for row in cr:
+                    ignored_services.append(row['service_id'])
+
+            return ignored_services
+
+    async def get_ignored_accounts_per_game(self, guild_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT game_id,account_id FROM ignored_accounts WHERE follower_guild_id = ? ;"
+            params = (guild_id,)
+
+            ignored_accounts = []
+            async with conn.execute(query, params) as cr:
+                async for row in cr:
+                    ignored_accounts.append(tuple(row))
+
+            ignored_accounts_per_game = defaultdict(list)
+            for game_id, account_id in ignored_accounts:
+                ignored_accounts_per_game[game_id].append(account_id)
+
+            return ignored_accounts_per_game
+
+    async def get_ignored_services_per_game(self, guild_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT game_id,service_id FROM ignored_services WHERE follower_guild_id = ? ;"
+            params = (guild_id,)
+
+            ignored_services = []
+            async with conn.execute(query, params) as cr:
+                async for row in cr:
+                    ignored_services.append(tuple(row))
+
+            ignored_services_per_game = defaultdict(list)
+            for game_id, service_id in ignored_services:
+                ignored_services_per_game[game_id].append(service_id)
+
+            return ignored_services_per_game
+
+    async def rm_ignored_account(self, guild_id, game_id, account_id):
         async with aiosqlite.connect(DB_FILE) as conn:
             await conn.set_trace_callback(logger.debug)
 
-            query = "DELETE FROM ignored_accounts WHERE account_id = ? AND follower_guild_id = ?;"
-            params = (account_id, guild_id)
+            query = "DELETE FROM ignored_accounts WHERE follower_guild_id = ? AND game_id = ? AND account_id = ?;"
+            params = (guild_id, game_id, account_id)
+
+            await conn.execute(query, params)
+            await conn.commit()
+
+    async def rm_ignored_service(self, guild_id, game_id, service_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            await conn.set_trace_callback(logger.debug)
+
+            query = "DELETE FROM ignored_services WHERE follower_guild_id = ? AND game_id = ? AND service_id = ?;"
+            params = (guild_id, game_id, service_id)
 
             await conn.execute(query, params)
             await conn.commit()

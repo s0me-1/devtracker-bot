@@ -66,6 +66,7 @@ class Tracker(commands.Cog):
         default_channel_id = None
 
         all_ignored_accounts = await ORM.get_all_ignored_accounts()
+        all_ignored_services = await ORM.get_all_ignored_services()
 
         if not posts_per_gid:
             logger.error("API didnt returned anything !")
@@ -106,7 +107,7 @@ class Tracker(commands.Cog):
 
                     logger.info(f"Processing: [{gid}] {post['account']['identifier']} | {post['topic']} [{post['id']}] ")
                     em = self._generate_embed(post)
-                    embeds_per_gid[gid].append((em, post['account']['identifier']))
+                    embeds_per_gid[gid].append((em, post['account']['identifier'], post['account']['service']))
 
 
         message_queue = []
@@ -147,11 +148,17 @@ class Tracker(commands.Cog):
             embeds = []
             embeds_size = 0
 
-            for em, account_id in embeds_per_gid[game_id]:
+
+            for em, account_id, service_id in embeds_per_gid[game_id]:
+
+                # Skip the post if the guild wanted to ignore that service
+                if service_id in all_ignored_services[guild_id][game_id]:
+                    logger.info(f"[{guild_id}] Post Skipped. ({post['account']['service']} is in the ignore list).")
+                    continue
 
                 # Skip the post if the guild wanted to ignore the author
-                if account_id in all_ignored_accounts[guild_id]:
-                    logger.info(f"Skipped. ({post['account']['identifier']} is in the ignore list).")
+                if account_id in all_ignored_accounts[guild_id][game_id]:
+                    logger.info(f"[{guild_id}] Post Skipped. ({post['account']['identifier']} is in the ignore list).")
                     continue
 
                 embeds.append(em)
@@ -323,10 +330,13 @@ class Tracker(commands.Cog):
             # Fetch last post to show everything is working as intended
             await self._fetch_last_post(game_id, channel, inter.guild)
 
-
-    @commands.slash_command(name="dt-mute-account", description="Ignore posts from a specific account.")
+    @commands.slash_command(name="dt-mute", description="Ignore posts from a specific account.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def mute_account(self, inter: disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games), account_id: str = commands.Param(autocomplete=ac.accounts_all)):
+    async def mute(self, inter: disnake.ApplicationCommandInteraction):
+        pass
+
+    @mute.sub_command(name="account", description="Ignore posts from a specific account.")
+    async def mute_account(self, inter: disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games_fw), account_id: str = commands.Param(autocomplete=ac.accounts_all)):
 
         await inter.response.defer()
 
@@ -341,11 +351,33 @@ class Tracker(commands.Cog):
             game_id = games[game_name]
             account_ids = await API.fetch_accounts(game_id)
             if account_id not in account_ids:
-                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for {game_name}.")
+                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for `{game_name}`.")
             else:
-                await ORM.add_ignored_account(inter.guild_id, account_id)
+                await ORM.add_ignored_account(inter.guild_id, game_id, account_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" muted')
-                await inter.edit_original_message(f'Posts from `{account_id}` will be ignored from now on.')
+                await inter.edit_original_message(f'Posts from `{account_id}` will be ignored from now on for `{game_name}`')
+
+    @mute.sub_command(name="service", description="Ignore posts from a specific service.")
+    async def mute_service(self, inter: disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games_fw), service_id: str = commands.Param(autocomplete=ac.services_all)):
+
+        await inter.response.defer()
+
+        games = await API.fetch_available_games()
+        if not games:
+            await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
+            return
+
+        if game_name not in games.keys():
+            await inter.edit_original_message(f"`{game_name}` is either an invalid game or unsupported.")
+        else:
+            game_id = games[game_name]
+            service_ids = await API.fetch_services(game_id)
+            if service_id not in service_ids:
+                await inter.edit_original_message(f"`{service_id}` doesn't exists or isn't followed for `{game_name}`.")
+            else:
+                await ORM.add_ignored_service(inter.guild_id, game_id, service_id)
+                logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{service_id}" muted for `{game_name}`')
+                await inter.edit_original_message(f'Posts from `{service_id}` will be ignored from now on for `{game_name}`.')
 
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS
@@ -399,18 +431,56 @@ class Tracker(commands.Cog):
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : Unset custom channel for `{game}`')
             await inter.edit_original_message(f"The notification channel for `{game}` is no longer set.")
 
-    @commands.slash_command(name="dt-unmute-account", description="Unmute a previously ignored account.")
+    @commands.slash_command(name="dt-unmute", description="Unmute a previously muted service or account.")
     @commands.default_member_permissions(manage_guild=True, moderate_members=True)
-    async def unmute_account(self, inter, account_id: str = commands.Param(autocomplete=ac.accounts_ignored)):
+    async def unmute(self, inter: disnake.ApplicationCommandInteraction):
+        pass
+
+    @unmute.sub_command(name="account", description="Unmute a previously ignored account.")
+    async def unmute_account(self, inter, game_name: str = commands.Param(autocomplete=ac.games_fw), account_id: str = commands.Param(autocomplete=ac.accounts_ignored)):
 
         await inter.response.defer()
-        account_ids = await ORM.get_ignored_accounts(inter.guild_id)
-        if account_id not in account_ids:
-            await inter.edit_original_message(f"`{account_id}` isn't in your ignore list.")
+
+        games = await API.fetch_available_games()
+        if not games:
+            await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
+            return
+
+        if game_name not in games.keys():
+            await inter.edit_original_message(f"`{game_name}` is either an invalid game or unsupported.")
         else:
-            await ORM.rm_ignored_account(inter.guild_id, account_id)
-            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" unmuted')
-            await inter.edit_original_message(f'Posts from `{account_id}` will no longer be ignored.')
+            game_id = games[game_name]
+
+            account_ids = await ORM.get_ignored_accounts(inter.guild_id, game_id)
+            if account_id not in account_ids:
+                await inter.edit_original_message(f"`{account_id}` isn't in your ignore list.")
+            else:
+                await ORM.rm_ignored_account(inter.guild_id, game_id, account_id)
+                logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" unmuted for {game_name}')
+                await inter.edit_original_message(f'Posts from `{account_id}` will no longer be ignored for {game_name}.')
+
+    @unmute.sub_command(name="service", description="Unmute a previously ignored service.")
+    async def unmute_service(self, inter, game_name: str = commands.Param(autocomplete=ac.games_fw), service_id: str = commands.Param(autocomplete=ac.service_ignored)):
+
+        await inter.response.defer()
+
+        games = await API.fetch_available_games()
+        if not games:
+            await inter.edit_original_message(f"It seems the DeveloperTracker.com API didn't respond.")
+            return
+
+        if game_name not in games.keys():
+            await inter.edit_original_message(f"`{game_name}` is either an invalid game or unsupported.")
+        else:
+            game_id = games[game_name]
+
+            service_ids = await ORM.get_ignored_services(inter.guild_id, game_id)
+            if service_id not in service_ids:
+                await inter.edit_original_message(f"`{service_id}` isn't in your ignore list.")
+            else:
+                await ORM.rm_ignored_service(inter.guild_id, game_id, service_id)
+                logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{service_id}" unmuted for {game_id}')
+                await inter.edit_original_message(f'Posts from `{service_id}` will no longer be ignored for {game_id}.')
 
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS

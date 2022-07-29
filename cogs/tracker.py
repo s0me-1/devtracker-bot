@@ -3,7 +3,6 @@ from collections import defaultdict
 import logging
 import re
 from datetime import datetime
-from typing import Iterable
 
 from bs4 import BeautifulSoup, NavigableString
 import disnake
@@ -175,8 +174,9 @@ class Tracker(commands.Cog):
                     embeds = [em]
                     embeds_size = len(em)
 
-            if messages or embeds:
-                messages = [{'embeds': embeds, 'game_id': game_id}] if not messages else messages
+            if embeds:
+                messages.append({'embeds': embeds, 'game_id': game_id})
+            if messages:
                 message_queue.append((channel, messages, ordered_posts[0]['id']))
                 logger.debug(f"{guild_id}/{game_id}: {len(messages)} messages to send.")
 

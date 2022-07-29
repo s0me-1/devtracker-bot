@@ -146,6 +146,20 @@ class API:
                     response = await resp.json()
                     logger.debug(f'GET {url} {resp.status}')
                     accounts = response['data']
-                    return [a['identifier'] for a in accounts]
+                    return set([a['identifier'] for a in accounts])
+            except ClientConnectorError as e:
+                logger.error('Connection Error', str(e))
+
+    async def fetch_services(self, game_id):
+        url = f'{self.api_baseurl}/{game_id}/accounts'
+
+        async with ClientSession(headers=self.headers) as session:
+            try:
+                async with session.get(url) as resp:
+                    response = await resp.json()
+                    logger.debug(f'GET {url} {resp.status}')
+                    accounts = response['data']
+                    services = [a['service'] for a in accounts]
+                    return set(services)
             except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))

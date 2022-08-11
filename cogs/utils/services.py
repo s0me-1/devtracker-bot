@@ -59,6 +59,10 @@ CUSTOMIZERS = {
         'icon_url': 'https://cdn.freebiesupply.com/images/large/2x/steam-logo-black-transparent.png',
         'color': 0
     },
+    'kleiForum': {
+            'icon_url': 'https://shop.klei.com/wp-content/uploads/2017/05/cropped-cropped-logo_klei_512x512.png',
+            'color': 10070709
+    },
 
     'default': {
             'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/273-2710.png',

@@ -605,6 +605,25 @@ class Tracker(commands.Cog):
         logger.info(f'{nb_posts} posts retrieved ({err_msg}).')
         return posts
 
+    def _find_img(self, soup : BeautifulSoup):
+        imgs = soup.find_all('img')
+
+        if not imgs:
+            return None
+
+        # Last img first
+        imgs.reverse()
+        for img in imgs:
+            if 'icon' in img['src'] and '.gif' in img['src']:
+                # Some services use old .gif emojis, in the future it would probably
+                # be better to check for a minimal size.
+                continue
+            else:
+                # Force HTTPS url scheme
+                return re.sub(r"^\/\/",'https://', img['src'])
+        return None
+
+
     def _sanitize_post_content(self, post_content, origin=None):
 
         if origin not in ['Twitter', ]:
@@ -726,10 +745,7 @@ class Tracker(commands.Cog):
 
         description = (body_trimmed[:EMBEDS_MAX_DESC - 15] + '...\n\n[...]') if len(body_trimmed) > EMBEDS_MAX_DESC else body_trimmed
 
-        img_url = None
-        imgs = soup.find_all('img')
-        if len(imgs) > 0:
-            img_url = imgs[-1]['src']
+        img_url = self._find_img(soup)
 
         return description, img_url
 

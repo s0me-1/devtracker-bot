@@ -143,6 +143,10 @@ class Tracker(commands.Cog):
                 logger.debug(f'No new posts for {game_id}.')
                 continue
 
+            if not channel:
+                logger.error(f'Could not find a proper channel [{channel_id} | {default_channel_id}].')
+                continue
+
             messages = []
             embeds = []
             embeds_size = 0
@@ -199,7 +203,11 @@ class Tracker(commands.Cog):
 
     async def _send_embeds(self, channel: disnake.TextChannel, messages, last_post_id):
         for msg in messages:
-            logger.info(f"{channel.guild.name} [{channel.guild.id}]: Sending {len(msg['embeds'])} embeds to {channel.name}.")
+            if channel:
+                logger.info(f"{channel.guild.name} [{channel.guild.id}]: Sending {len(msg['embeds'])} embeds to {channel.name}.")
+            else:
+                logger.error("Tried to send embeds to a channel that does not exist !")
+                continue
             try:
                 await channel.send(embeds=msg['embeds'])
                 await ORM.set_last_post(last_post_id, channel.guild.id, msg['game_id'])

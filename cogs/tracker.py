@@ -782,11 +782,11 @@ class Tracker(commands.Cog):
         acc_dev_group = post['account']['developer']['group']
 
         author_text = f'{acc_dev_nick} [{acc_dev_group}]' if acc_dev_group else f'{acc_dev_nick}'
-        footer_text = f"Account: {acc_id} | DT#: {post['id']}"
+        footer_text = f"{acc_id} / {post['id']}"
 
-        footer_icon_url = "https://i33.servimg.com/u/f33/11/20/17/41/clipar10.png"
+        footer_icon_url = "https://i33.servimg.com/u/f33/11/20/17/41/noun-a10.png"
         field_topic = f"[{post['topic']}]({post['url']})"
-        field_published = f"{str(datetime.fromtimestamp(post['timestamp']))} (UTC)"
+        field_published = f"<t:{post['timestamp']}:f>"
 
         emb = disnake.Embed(
             description=description,

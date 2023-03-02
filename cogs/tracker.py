@@ -221,6 +221,11 @@ class Tracker(commands.Cog):
                 except disnake.Forbidden:
                     logger.warning(f'{channel.guild.name}[{channel.guild.id}]: Owner "{channel.guild.owner}" cannot be contacted (Forbidden) ')
 
+            except disnake.HTTPException as e:
+                logger.error(f"HTTPException: {e.code} | {e.status} | {e.text}")
+                continue
+
+
     @resfresh_posts.before_loop
     async def before_refresh(self):
         logger.info('Waiting before launching refresh tasks...')

@@ -803,7 +803,7 @@ class Tracker(commands.Cog):
         logger.info(f'{guild.name} [{guild.id}] : Fetching {post_id} for "{game_id}". (Dest: `#{channel.name}`)')
         try:
             await channel.send(embed=em)
-            ORM.set_last_post(post_id, guild.id, game_id)
+            await ORM.set_last_post(post_id, guild.id, game_id)
         except disnake.Forbidden as e:
             logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name}. last_post not updated.')
             raise e

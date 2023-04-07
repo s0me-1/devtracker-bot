@@ -38,7 +38,7 @@ class API:
                     response_time = time.monotonic() - start
                     return resp.status, response_time
             except ClientConnectorError as e:
-                logger.error('Connection Error', str(e))
+                logger.error(str(e))
 
     async def fetch_available_games(self):
         url = f'{self.api_baseurl}/games'
@@ -53,7 +53,7 @@ class API:
                     api_games_data = [(g['identifier'], g['name']) for g in games]
                     games = api_games_data
             except ClientConnectorError as e:
-                logger.error('Connection Error', str(e))
+                logger.error(str(e))
                 games = None
 
         game_dict = {}
@@ -119,7 +119,7 @@ class API:
                     post = [p for p in posts if p['id'] == post_id]
                     return post
             except ClientConnectorError as e:
-                logger.error('Connection Error', str(e))
+                logger.error(str(e))
 
     async def fetch_latest_post(self, game_id):
         url = f'{self.api_baseurl}/{game_id}/posts'
@@ -132,7 +132,7 @@ class API:
                     posts = content['data']
                     return posts[0]
             except ClientConnectorError as e:
-                logger.error('Connection Error', str(e))
+                logger.error(str(e))
 
     async def fetch_accounts(self, game_id):
         url = f'{self.api_baseurl}/{game_id}/accounts'
@@ -145,7 +145,7 @@ class API:
                     accounts = response['data']
                     return accounts
             except ClientConnectorError as e:
-                logger.error('Connection Error', str(e))
+                logger.error(str(e))
 
     async def fetch_all_accounts(self, game_ids):
 
@@ -177,4 +177,4 @@ class API:
                     services = [a['service'] for a in accounts]
                     return set(services)
             except ClientConnectorError as e:
-                logger.error('Connection Error', str(e))
+                logger.error(str(e))

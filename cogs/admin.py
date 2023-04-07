@@ -24,7 +24,7 @@ class Admin(commands.Cog):
     # ---------------------------------------------------------------------------------
 
     @commands.slash_command(name="dt-stats", description="See DevTracker statistics.", guild_ids=[984016998084247582, 687999396612407341])
-    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
+    @commands.default_member_permissions(manage_guild=True)
     async def statistics(self, inter : disnake.ApplicationCommandInteraction):
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Statistiques request')
 

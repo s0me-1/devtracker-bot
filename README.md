@@ -6,8 +6,6 @@
 <a href="https://discord.gg/QN9uveFYXX"><img src="https://img.shields.io/discord/984016998084247582?style=flat-square&color=5865f2&logo=discord&logoColor=ffffff&label=discord" alt="Discord server invite" /></a>
 <a href="https://pypi.python.org/pypi/disnake"><img src="https://img.shields.io/pypi/pyversions/disnake.svg?style=flat-square" alt="PyPI supported Python versions" /></a>
 
-
-
 Discord Bot interfacing with the API of [DeveloperTracker.com](https://developertracker.com/).
 
 Built with [Disnake](https://disnake.dev/).
@@ -15,11 +13,11 @@ Built with [Disnake](https://disnake.dev/).
 - [Features](#features)
 - [Supported Games](#supported-games)
 - [Getting Started](#getting-started)
+  * [Installation](#installation)
+  * [Basic setup](#basic-setup)
+  * [Advanced setup](#advanced-setup)
 - [Commands](#commands)
-  * [Set the default notification channel](#set-the-default-notification-channel)
-  * [Follow a game](#follow-a-game)
-  * [Follow a game in a specific channel](#follow-a-game-in-a-specific-channel)
-  * [Ignore posts from a specific account](#ignore-posts-from-a-specific-account)
+  * [Filtering posts](#filtering-posts)
   * [Get current configuration](#get-current-configuration)
 - [Self-Hosting](#self-hosting)
   * [Python](#python)
@@ -36,9 +34,12 @@ This Bot track any post made by GameDevs from **30+** games, and let you follow 
 - Set a specific channel per followed game if desired.
 - Ignore posts from specific GameDevs
 
-![DevTracker Post Example Steam](https://i.imgur.com/506lKDV.png)
+![DevTracker Post Example Steam](https://i.imgur.com/0VGp7pl.png)
 
 ## Supported Games
+
+This is a non-exhaustive list of the games supported by the bot. You can find the full list [here](https://developertracker.com/).
+
 - ARK: Survival Evolved
 - Anthem
 - Battlefield 1
@@ -86,65 +87,102 @@ Click the button below to add **DevTracker** to your server.
 
 [![](https://i33.servimg.com/u/f33/11/20/17/41/invite10.png)](https://discord.com/api/oauth2/authorize?client_id=982257201211138050&permissions=274877925376&scope=bot%20applications.commands)
 
+### Basic setup
+Simply create a channel where you want to receive the posts, make sure **DevTracker** has the `View Channel` and `Send Messages` Discord permissions for that channel.
+
+Then, use the `/dt-set-channel` command to tell the bot where to send the posts. e.g.:
+```
+ /dt-set-channel game channel: #sc-devtracker game: Star Citizen
+```
+
+### Advanced setup
+
+You have 2 options, use a single channel for all the posts, or use a specific channel for each game:
+- **Single channel**: Use the `/dt-set-channel default` command to set the default channel for all the posts. e.g.:
+```
+ /dt-set-channel default channel: #devtracker
+```
+You can then use the `/dt-follow` command to follow games. e.g.:
+```
+/dt-follow game: Star Citizen
+/dt-follow game: Elite: Dangerous
+```
+Now all the posts from `Star Citizen` and `Elite: Dangerous` will be sent to the `#devtracker` channel.
+
+- **Specific channel per game**: Use the `/dt-set-channel game` command to set a specific channel for each game. e.g.:
+```
+ /dt-set-channel game channel: #sc-devtracker game: Star Citizen
+```
+
+
 ## Commands
 
 Each Slash Command has **autofillers** to help you.
 
 ![Slash Command autofiller example](https://i.imgur.com/nui0Yk3.png)
 
-### Set the default notification channel
-```console
-/dt-set-channel default channel: #general
+
+### Filtering posts
+
+You can setup allowlists or ignorelists to filter posts for **each game**.
+- `allowlist`: Only posts matching the accounts or service in this list will be sent.
+- `ignorelist`: Posts matching the accounts or service in this list will be ignored.
+
+**Note**:
+- Each `allowlist` or `ignorelist` is game-specific, so you can have different filters for each game.
+- You can use both at the same time, but the `allowlist` will take precedence over the `ignorelist`. E.g. if you have an `igorelist` with a specific account for `Star Citizen` from the `Twitter` service, and an `allowlist` for the whole `rsi` service for `Star Citizen`, only posts from the `rsi` service will be sent, the ignored account will not even be considered.
+- You'll find the `account_id` in the footer of each post.
+
+**Ignore specific accounts or service:**
+
+This is achieved via the `/dt-ignorelist` command. Any future post from the specified account or service from the `ignorelist` for the specified game will be ignored.
+
+**Examples:**
+
+```sh
+# Ignore posts from a specific account
+/dt-ignorelist add account game_name: Star Citizen service_id: rsi account_id: Zyloh-CIG
+
+# Ignore all posts from a specific service
+/dt-ignorelist add service game_name: Star Citizen service_id: rsi
+
+# Stop ignoring posts from a specific service
+/dt-ignorelist remove service game_name: Star Citizen service_id: rsi
+
+# Stop ignoring posts from a specific account
+/dt-ignorelist remove account game_name: Star Citizen account_id: Zyloh-CIG
 ```
 
-### Follow a game
-```console
-/dt-follow game: Star Citizen
-```
+**Get only posts from specific accounts or service:**
 
-### Follow a game in a specific channel
-```console
-/dt-set-channel game channel: #tab-devtracker game: They Are Billions
-```
+This is achieved via the `/dt-allowlist` command. Any future post from the specified account or service from the `allowlist` will be the only ones sent for the specified game.
 
-### Ignore posts from a specific account
+Usage is the same than the `ignorelist` command.
 
-You'll find the account ID in the footer of each post.
-```console
-/dt-mute account game:Rainbow 6: Siege account_id:76561198137855828
-```
-Please note that the account will be muted only for the selected game.
+**Examples:**
 
-### Ignore posts from a specific service
+```sh
+# Get posts from a specific account only
+/dt-allowlist add account game_name: Star Citizen service_id: rsi account_id: Zyloh-CIG
 
-If you want to completely ignore posts from a whole service (e.g. Twitter)
-```console
-/dt-mute service game:Rainbow 6: Siege service_id:Twitter
-```
-Please note that the service will be muted only for the selected game.
+# Get posts from a specific service only
+/dt-allowlist add service game_name: Star Citizen service_id: rsi
 
-### Unmute a specific account
+# Remove a specific service from the allowlist
+/dt-allowlist remove service game_name: Star Citizen service_id: rsi
 
-Alongside the `/dt-mute` commands, you basically have their `/dt-unmute` conterparts.
-
-You can find the accounts you have ignored with the `/dt-status` slash command.
-```console
-/dt-unmute account game:Star Citizen account_id:76561198137855828
-```
-
-### Unmute a specific service
-
-You can find the services you have ignored with the `/dt-status` slash command.
-```console
-/dt-unmute service game:Star Citizen service_id:Twitter
+# Remove a specific account from the allowlist
+/dt-allowlist remove account game_name: Star Citizen account_id: Zyloh-CIG
 ```
 ### Get current configuration
 
-![DevTracker Config](https://i.imgur.com/mF20Mfk.png)
+You can use the `/dt-config` command to get the current configuration for the server.
 
-```console
-/dt-status
-```
+This will list all the games you're following, and the channel where the posts are sent.
+It will also give you the active `allowlist` and `ignorelist` for each game.
+
+![DevTracker Config](https://i.imgur.com/Za6pQ7F.png)
+
 ## Self-Hosting
 
 This Bot relies on the **DeveloperTracker API** that can be found [here](https://github.com/post-tracker/rest-api).

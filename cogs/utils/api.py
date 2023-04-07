@@ -6,8 +6,6 @@ import sec
 from aiohttp import ClientSession, ClientConnectorError, ClientTimeout, ContentTypeError
 import asyncio
 
-from cogs.utils import database as db
-ORM = db.ORM()
 
 logger = logging.getLogger('bot.API')
 
@@ -53,11 +51,10 @@ class API:
                     logger.debug(f'GET {url} {resp.status}')
                     games = response['data']
                     api_games_data = [(g['identifier'], g['name']) for g in games]
-                    await ORM.update_local_games(api_games_data)
                     games = api_games_data
             except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
-                games = await ORM.get_local_games()
+                games = None
 
         game_dict = {}
         for g in games:
@@ -146,9 +143,27 @@ class API:
                     response = await resp.json()
                     logger.debug(f'GET {url} {resp.status}')
                     accounts = response['data']
-                    return set([a['identifier'] for a in accounts])
+                    return accounts
             except ClientConnectorError as e:
                 logger.error('Connection Error', str(e))
+
+    async def fetch_all_accounts(self, game_ids):
+
+        timeout = ClientTimeout(total=60)
+        async with ClientSession(headers=self.headers, timeout=timeout) as session:
+            try:
+                res = await asyncio.gather(
+                *[
+                        self.fetch_accounts(gid)
+                        for gid in game_ids
+                    ],
+                    return_exceptions=True
+                )
+                return res
+
+            except asyncio.TimeoutError as e:
+                logger.error(f'TIMEOUT: The Fetchs accounts process took more than {timeout.total} seconds.')
+                return None
 
     async def fetch_services(self, game_id):
         url = f'{self.api_baseurl}/{game_id}/accounts'

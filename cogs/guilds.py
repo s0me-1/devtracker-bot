@@ -93,14 +93,14 @@ class Guilds(commands.Cog):
         await inter.response.send_message(components=[invite_btn])
 
     @commands.slash_command(name="dt-help", description="Struggling getting started?")
-    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
+    @commands.default_member_permissions(manage_guild=True)
     async def get_help_message(self, inter : disnake.ApplicationCommandInteraction):
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Show help.')
 
         await inter.response.send_message(self.help_message,  components=[self.server_btn])
 
     @commands.slash_command(name="dt-discord-support", description="Join the official DevTracker Discord Server.")
-    @commands.default_member_permissions(manage_guild=True, moderate_members=True)
+    @commands.default_member_permissions(manage_guild=True)
     async def get_help_message(self, inter : disnake.ApplicationCommandInteraction):
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Show Server Invite.')
 

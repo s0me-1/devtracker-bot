@@ -57,10 +57,11 @@ class API:
                 games = None
 
         game_dict = {}
-        for g in games:
-            game_dict.update({
-                g[1]: g[0]
-            })
+        if games:
+            for g in games:
+                game_dict.update({
+                    g[1]: g[0]
+                })
         return game_dict
 
     async def fetch_posts(self, game_id):

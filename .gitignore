@@ -132,6 +132,7 @@ dmypy.json
 # SQLite
 *.sqlite
 *.db
+*.bk
 
 # Cust scripts
 fetch_post*.py

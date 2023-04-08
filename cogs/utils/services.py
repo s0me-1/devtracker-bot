@@ -39,6 +39,10 @@ CUSTOMIZERS = {
         'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/spectr10.png',
         'color': 3233415
     },
+    'CommLink': {
+        'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/rsi_lo10.png',
+        'color': 59135
+    },
     'RSS': {
         'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/256px-10.png',
         'color': 16753920

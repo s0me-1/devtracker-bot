@@ -1001,7 +1001,7 @@ class Tracker(commands.Cog):
             logger.warning(f'{service} NOT FOUND in CUSTOMIZERS !')
 
         acc_id = post['account']['identifier']
-        acc_dev_nick = post['account']['developer']['nick']
+        acc_dev_nick = post['account']['developer']['nick'] if service != "CommLink" else "Comm-Link"
         acc_dev_group = post['account']['developer']['group']
 
         author_text = f'{acc_dev_nick} [{acc_dev_group}]' if acc_dev_group else f'{acc_dev_nick}'

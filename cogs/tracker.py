@@ -806,6 +806,7 @@ class Tracker(commands.Cog):
             await inter.send(embed=emb_err, ephemeral=True)
             return
 
+        await modal_inter.response.defer()
         emb_success = disnake.Embed(title="✅  Success", colour=6076508)
         emb_success.description = f"Global URL filters for {game_name} [{service_id}] have been updated.\n" \
                                     "Only posts with URLs containing the specified keywords will be sent." \
@@ -818,7 +819,7 @@ class Tracker(commands.Cog):
         if new_filters and game_id:
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{new_filters}" added as URL filters for {game_name} [{service_id}]')
             await ORM.update_urlfilters_global(inter.guild_id, game_id, service_id, modal_inter.text_values["url_filters_input"])
-        await modal_inter.response.send_message(embed=emb_success)
+        await modal_inter.edit_original_message(embed=emb_success)
 
     @manage_urlfilters.sub_command(name="channel", description="Dispatch posts with specific keywords in their origin URLs to a specific channel.")
     async def edit_urlfilters_channel(
@@ -883,6 +884,7 @@ class Tracker(commands.Cog):
             await inter.send(embed=emb_err, ephemeral=True)
             return
 
+        await modal_inter.response.defer()
         emb_success = disnake.Embed(title="✅  Success", colour=6076508)
         emb_success.description = f"URL filters for **{game_name}** [`{service_id}`] have been updated.\n" \
                                   f"Posts with URLs containing the specified keywords will be sent to <#{channel.id}>." \
@@ -896,10 +898,10 @@ class Tracker(commands.Cog):
         if new_filters:
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{new_filters}" added as URL filters for {game_name} [{service_id}]')
             await ORM.update_urlfilters_channel(inter.guild_id, game_id, service_id, new_filters, channel.id)
-            await modal_inter.response.send_message(embed=emb_success)
+            await modal_inter.edit_original_message(embed=emb_success)
         else:
             emb_neutral = disnake.Embed(description=" ❌ No filters were provided. No changes were made.")
-            await modal_inter.response.send_message(embed=emb_neutral)
+            await modal_inter.edit_original_message(embed=emb_neutral)
 
     @manage_urlfilters.sub_command(name="clear", description="Clear all current urlfilters.")
     async def clear_urlfilters(

@@ -129,7 +129,7 @@ You can setup allowlists or ignorelists to filter posts for **each game**.
 - `allowlist`: Only posts matching the accounts or service in this list will be sent.
 - `ignorelist`: Posts matching the accounts or service in this list will be ignored.
 
-**Note**:
+**Notes**:
 - Each `allowlist` or `ignorelist` is game-specific, so you can have different filters for each game.
 - You can use both at the same time, but the `allowlist` will take precedence over the `ignorelist`. E.g. if you have an `igorelist` with a specific account for `Star Citizen` from the `Twitter` service, and an `allowlist` for the whole `rsi` service for `Star Citizen`, only posts from the `rsi` service will be sent, the ignored account will not even be considered.
 - You'll find the `account_id` in the footer of each post.
@@ -184,32 +184,34 @@ There's two different con
 ##### Global URL Filters
 Only posts where the origin URL matches the filters will be sent to the channel configured with the `/dt-set-channel` command.
 
-**Examples:**
-Let's imagine you want only posts from the `Announcements` section of the Star Citizen forums:
+**Example**
 
-The url for the `Announcements` section is `https://robertsspaceindustries.com/spectrum/community/SC/forum/1`
+Let's imagine you want only posts from the `Announcements` section of the Star Citizen forums. The url for the `Announcements` section is `https://robertsspaceindustries.com/spectrum/community/SC/forum/1`
+
 You can use the `/dt-urlfilters global` command to add `forum/1` filter for `Star Citizen` forums:
 ```sh
 /dt-urlfilters global game_name: Star Citizen service_id: rsi
 ```
 
 This will open a modal with your current filters.
+
 ![URL Filters modal](https://i.imgur.com/7DM5hIR.png)
 
 You can then add the `forum/1` filter then click the **Submit** button to apply changes.
 
-**Note**: You can add multiple filters for the same service. You just need to separate them with a comma `,`.
+**Note:**
+You can also add multiple filters for the same service. You just need to separate them with a comma `,`.
 If any of the filters match the post URL, it will be sent to the set channel.
 
-eg: `forum/1,forum/3,forum/4`, this will match any post from the `Announcements`, `General` and `Feedback` sections.
+E.g.: `forum/1,forum/3,forum/4`, this will match any post from the `Announcements`, `General` and `Feedback` sections.
 
 ##### Channel URL Filters
 This allows to use URL Filters to dispatch posts that match the filters to a specific channel.
 
-**Examples:**
-Let's imagine you want all the posts from the `Announcements` section of the Star Citizen forums to be sent to the `#sc-announcements` Discord channel:
+**Example**
 
-The url for the `Announcements` section is `https://robertsspaceindustries.com/spectrum/community/SC/forum/1`
+Let's imagine you want all the posts from the `Announcements` section of the Star Citizen forums to be sent to the `#sc-announcements` Discord channel. The url for the `Announcements` section is `https://robertsspaceindustries.com/spectrum/community/SC/forum/1`
+
 You can use the `/dt-urlfilters channel` command to add `forum/1` filter for `Star Citizen` forums:
 ```
 /dt-urlfilters global channel: #sc-announcements game_name: Star Citizen service_id: rsi
@@ -221,6 +223,7 @@ You can then add the `forum/1` filter then click the **Submit** button to apply 
 **Note**:
 - Please make sure the bot have the __**Send Message permission**__ for the channel you're using. Otherwise it won't be able to send the posts.
 - You can add multiple filters for the same service here too. You just need to separate them with a comma `,`.
+
 ### Get current configuration
 
 You can use the `/dt-config` command to get the current configuration for the server.

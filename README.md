@@ -280,5 +280,9 @@ $ docker-compose --profile debug up -d
 - [@kokarn](https://github.com/kokarn) - Main Dev of [DeveloperTracker.com](https://developertracker.com/).
 - [Disnake](https://github.com/DisnakeDev/disnake) - Discord API Wrapper for Python.
 
+## Terms of Service
+
+By using this bot, you agree to the [DevTracker Bot Terms of Service](https://github.com/s0me-1/devtracker-bot/tree/master/docs/tos.html).
+
 ## License
 [GPL v3](https://github.com/s0me-1/devtracker-bot/blob/master/LICENSE)

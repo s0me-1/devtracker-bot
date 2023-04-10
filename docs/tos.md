@@ -1,3 +1,7 @@
+layout: page
+title: "Terms of Service"
+permalink: /tos
+
 <style>
     [data-custom-class='body'],
     [data-custom-class='body'] * {

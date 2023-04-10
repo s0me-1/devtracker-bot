@@ -1,6 +1,9 @@
 from collections import defaultdict
 from email.policy import default
 import disnake
+import logging
+
+logger = logging.getLogger('bot.utils.AutoCompleters')
 
 # Call are done for every user input made, but
 # API requests should be cached so it should not be an issue
@@ -15,9 +18,14 @@ ORM = db.ORM()
 # so auto-completers can't return more than 25 elements
 
 async def games(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    games = await API.fetch_available_games()
-    max_list = [g for g in games.keys() if user_input.lower() in g.lower()]
-    return max_list[0:24]
+    try:
+        games = await API.fetch_available_games()
+        max_list = [g for g in games.keys() if user_input.lower() in g.lower()]
+        return max_list[0:24]
+    except Exception as e:
+        logger.error(e)
+        return ['[ERROR] API request failed. Retry later.']
+
 
 async def games_fw(inter: disnake.ApplicationCommandInteraction, user_input: str):
     fw_game_ids = await ORM.get_followed_games(inter.guild_id)
@@ -25,31 +33,39 @@ async def games_fw(inter: disnake.ApplicationCommandInteraction, user_input: str
     return max_list[0:24]
 
 async def accounts_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    games = await API.fetch_available_games()
-    if inter.options['add']['account']['game_name'] not in games.keys():
-        return ['[ERROR] Invalid game provided']
-    game_id = games[inter.options['add']['account']['game_name']]
-    if 'service_id' not in inter.options['add']['account'].keys():
-        return ['[ERROR] Please provide a valid service first']
-    service_id = inter.options['add']['account']['service_id']
-    services = await API.fetch_services(game_id)
-    if service_id not in services:
-        return ['[ERROR] Invalid service provided']
-    accounts = await API.fetch_accounts(game_id)
+    try:
+        games = await API.fetch_available_games()
+        if inter.options['add']['account']['game_name'] not in games.keys():
+            return ['[ERROR] Invalid game provided']
+        game_id = games[inter.options['add']['account']['game_name']]
+        if 'service_id' not in inter.options['add']['account'].keys():
+            return ['[ERROR] Please provide a valid service first']
+        service_id = inter.options['add']['account']['service_id']
+        services = await API.fetch_services(game_id)
+        if service_id not in services:
+            return ['[ERROR] Invalid service provided']
+        accounts = await API.fetch_accounts(game_id)
 
-    account_ids = [a['identifier'] for a in accounts if a['service'] == service_id]
-    max_list = [acc_id for acc_id in account_ids if user_input.lower() in acc_id.lower()]
-    return max_list[0:24]
+        account_ids = [a['identifier'] for a in accounts if a['service'] == service_id]
+        max_list = [acc_id for acc_id in account_ids if user_input.lower() in acc_id.lower()]
+        return max_list[0:24]
+    except Exception as e:
+        logger.error(e)
+        return ['[ERROR] API request failed. Retry later.']
 
 async def accounts_service_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    games = await API.fetch_available_games()
-    if inter.options['add']['account']['game_name'] not in games.keys():
-        return ['[ERROR] Invalid game provided']
-    game_id = games[inter.options['add']['account']['game_name']]
-    services = await API.fetch_services(game_id)
+    try:
+        games = await API.fetch_available_games()
+        if inter.options['add']['account']['game_name'] not in games.keys():
+            return ['[ERROR] Invalid game provided']
+        game_id = games[inter.options['add']['account']['game_name']]
+        services = await API.fetch_services(game_id)
 
-    max_list = [serv_id for serv_id in services if user_input.lower() in serv_id.lower()]
-    return max_list[0:24]
+        max_list = [serv_id for serv_id in services if user_input.lower() in serv_id.lower()]
+        return max_list[0:24]
+    except Exception as e:
+        logger.error(e)
+        return ['[ERROR] API request failed. Retry later.']
 
 async def accounts_ignored(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await ORM.get_followed_games(inter.guild_id)
@@ -72,40 +88,56 @@ async def accounts_allowed(inter: disnake.ApplicationCommandInteraction, user_in
     return max_list[0:24]
 
 async def services_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    games = await API.fetch_available_games()
-    if inter.options['add']['service']['game_name'] not in games.keys():
-        return ['[ERROR] Invalid game provided']
-    game_id = games[inter.options['add']['service']['game_name']]
-    service_ids = await API.fetch_services(game_id)
-    max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
-    return max_list[0:24]
+    try:
+        games = await API.fetch_available_games()
+        if inter.options['add']['service']['game_name'] not in games.keys():
+            return ['[ERROR] Invalid game provided']
+        game_id = games[inter.options['add']['service']['game_name']]
+        service_ids = await API.fetch_services(game_id)
+        max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
+        return max_list[0:24]
+    except Exception as e:
+        logger.error(e)
+        return ['[ERROR] API request failed. Retry later.']
 
 async def services_urlfilters_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    games = await API.fetch_available_games()
-    if inter.options['global']['game_name'] not in games.keys():
-        return ['[ERROR] Invalid game provided']
-    game_id = games[inter.options['global']['game_name']]
-    service_ids = await API.fetch_services(game_id)
-    max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
-    return max_list[0:24]
+    try:
+        games = await API.fetch_available_games()
+        if inter.options['global']['game_name'] not in games.keys():
+            return ['[ERROR] Invalid game provided']
+        game_id = games[inter.options['global']['game_name']]
+        service_ids = await API.fetch_services(game_id)
+        max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
+        return max_list[0:24]
+    except Exception as e:
+        logger.error(e)
+        return ['[ERROR] API request failed. Retry later.']
 
 async def services_urlfilters_channel(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    games = await API.fetch_available_games()
-    if inter.options['channel']['game_name'] not in games.keys():
-        return ['[ERROR] Invalid game provided']
-    game_id = games[inter.options['channel']['game_name']]
-    service_ids = await API.fetch_services(game_id)
-    max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
-    return max_list[0:24]
+    try:
+        games = await API.fetch_available_games()
+        if inter.options['channel']['game_name'] not in games.keys():
+            return ['[ERROR] Invalid game provided']
+        game_id = games[inter.options['channel']['game_name']]
+        service_ids = await API.fetch_services(game_id)
+        max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
+        return max_list[0:24]
+    except Exception as e:
+        logger.error(e)
+        return ['[ERROR] API request failed. Retry later.']
 
 async def services_urlfilters_clear(inter: disnake.ApplicationCommandInteraction, user_input: str):
-    games = await API.fetch_available_games()
-    if inter.options['clear']['game_name'] not in games.keys():
-        return ['[ERROR] Invalid game provided']
-    game_id = games[inter.options['clear']['game_name']]
-    service_ids = await API.fetch_services(game_id)
-    max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
-    return max_list[0:24]
+    try:
+        games = await API.fetch_available_games()
+        if inter.options['clear']['game_name'] not in games.keys():
+            return ['[ERROR] Invalid game provided']
+        game_id = games[inter.options['clear']['game_name']]
+        service_ids = await API.fetch_services(game_id)
+        max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
+        return max_list[0:24]
+    except Exception as e:
+        logger.error(e)
+        return ['[ERROR] API request failed. Retry later.']
 
 async def service_ignored(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await ORM.get_followed_games(inter.guild_id)

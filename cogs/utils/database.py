@@ -88,6 +88,18 @@ class ORM:
                 );
             ''')
             await conn.execute('''
+                CREATE TABLE IF NOT EXISTS url_filters (
+                    follower_guild_id NOT NULL,
+                    game_id NOT NULL,
+                    service_id NVARCHAR NOT NULL,
+                    filters TEXT NOT NULL,
+                    channel_id INTEGER,
+                    FOREIGN KEY (follower_guild_id) REFERENCES guilds (id) ON DELETE CASCADE
+                    FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE
+                    PRIMARY KEY (follower_guild_id, game_id, service_id, channel_id)
+                );
+            ''')
+            await conn.execute('''
                 CREATE TABLE IF NOT EXISTS posts (
                     game_id NVARCHAR NOT NULL,
                     post_id NVARCHAR NOT NULL,
@@ -761,6 +773,106 @@ class ORM:
             params = [(game_id, post_id) for post_id in post_ids]
             await conn.executemany(query, params)
             await conn.commit()
+
+    async def get_urlfilters_per_game(self, guild_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT game_id,service_id,channel_id,filters FROM url_filters WHERE follower_guild_id = ?;"
+            params = (guild_id,)
+
+            url_filters = []
+            async with conn.execute(query, params) as cr:
+                async for row in cr:
+                    url_filters.append(tuple(row))
+
+            urlfiters_services_per_game = defaultdict(list)
+            for game_id, service_id, channel_id, filters in url_filters:
+                urlfiters_services_per_game[game_id].append((service_id, channel_id, filters))
+            return urlfiters_services_per_game
+
+    async def get_urlfilters(self, guild_id, game_id, service_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT channel_id,filters FROM url_filters WHERE follower_guild_id = ? AND game_id = ? AND service_id = ?;"
+            params = (guild_id, game_id, service_id)
+
+            url_filters = []
+            async with conn.execute(query, params) as cr:
+                async for row in cr:
+                    url_filters.append(tuple(row))
+
+            return url_filters
+
+    async def get_urlfilters_channel(self, guild_id, game_id, service_id, channel_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT filters FROM url_filters WHERE follower_guild_id = ? AND game_id = ? AND service_id = ? AND channel_id = ?;"
+            params = (guild_id, game_id, service_id, channel_id)
+
+            async with conn.execute(query, params) as cr:
+                row = await cr.fetchone()
+                if row:
+                    return row['filters']
+                else:
+                    return None
+
+    async def get_urlfilters_per_service(self, guild_id, game_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT service_id,channel_id,filters FROM url_filters WHERE follower_guild_id = ? AND game_id = ?;"
+            params = (guild_id, game_id)
+
+            url_filters = defaultdict(list)
+            async with conn.execute(query, params) as cr:
+                async for row in cr:
+                    url_filters[row['service_id']].append(tuple(row['channel_id'], row['filters']))
+
+            return url_filters
+
+    async def update_urlfilters_global(self, guild_id, game_id, service_id, filters):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            await conn.set_trace_callback(logger.debug)
+
+            # Clean any existing filters
+            query = "DELETE FROM url_filters WHERE follower_guild_id = ? AND game_id = ? AND service_id = ?;"
+            params = (guild_id, game_id, service_id)
+            await conn.execute(query, params)
+            await conn.commit()
+
+            # Insert new global filters
+            query = "INSERT OR REPLACE INTO url_filters ('follower_guild_id', 'game_id', 'service_id', 'filters', 'channel_id') VALUES (?, ?, ?, ?, ?);"
+            params = (guild_id, game_id, service_id, filters, None)
+            await conn.execute(query, params)
+            await conn.commit()
+
+    async def update_urlfilters_channel(self, guild_id, game_id, service_id, filters, channel_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            await conn.set_trace_callback(logger.debug)
+
+            # Insert new global filters
+            query = "INSERT OR REPLACE INTO url_filters ('follower_guild_id', 'game_id', 'service_id', 'filters', 'channel_id') VALUES (?, ?, ?, ?, ?);"
+            params = (guild_id, game_id, service_id, filters, channel_id)
+            await conn.execute(query, params)
+            await conn.commit()
+
+    async def clear_urlfilters(self, guild_id, game_id, service_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            await conn.set_trace_callback(logger.debug)
+
+            # Clean any existing filters
+            query = "DELETE FROM url_filters WHERE follower_guild_id = ? AND game_id = ? AND service_id = ?;"
+            params = (guild_id, game_id, service_id)
+            await conn.execute(query, params)
+            await conn.commit()
+
 
     async def close_connection(self):
         async with aiosqlite.connect(DB_FILE) as conn:

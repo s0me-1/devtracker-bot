@@ -25,6 +25,36 @@ EMBEDS_MAX_AMOUNT = 10
 
 logger = logging.getLogger('bot.Tracker')
 
+# ---------------------------------------------------------------------------------
+# MODALS
+# ---------------------------------------------------------------------------------
+class URLFiltersModal(disnake.ui.Modal):
+
+    def __init__(self):
+        # The details of the modal, and its components
+        components = [
+            disnake.ui.TextInput(
+                label="URL Filters (Separate each by a comma (,))",
+                custom_id="url_filters_input",
+                value=self.current_filters,
+                placeholder="spectrum/community/SC/forum/1,spectrum/community/SC/forum/4",
+                max_length=1000,
+            )
+        ]
+        super().__init__(title="Create Tag", components=components)
+
+    # The callback received when the user input is completed.
+    async def callback(self, inter: disnake.ModalInteraction):
+        embed = disnake.Embed(title="Tag Creation")
+        for key, value in inter.text_values.items():
+            embed.add_field(
+                name=key.capitalize(),
+                value=value[:1024],
+                inline=False,
+            )
+        await inter.response.send_message(embed=embed)
+
+
 
 class Tracker(commands.Cog):
 
@@ -157,6 +187,8 @@ class Tracker(commands.Cog):
                 logger.error(f'Could not find a proper channel [{channel_id} | {default_channel_id}].')
                 continue
 
+            url_filters_per_service = await ORM.get_urlfilters_per_service(guild_id, game_id)
+
             messages = []
             embeds = []
             embeds_size = 0
@@ -164,25 +196,21 @@ class Tracker(commands.Cog):
 
             for em, account_id, service_id in embeds_per_gid[game_id]:
 
-                # Skip the post if the guild has a allowlist whitout the service
-                if len(all_allowed_services[guild_id][game_id]) > 0 and service_id not in all_allowed_services[guild_id][game_id]:
-                    logger.info(f"[{guild_id}] Post Skipped. ({post['account']['service']} is not in the allowlist).")
+                # Check Whitelist/Blacklist
+                skip_post = self._should_skip(guild_id, game_id, service_id, account_id, all_ignored_accounts, all_ignored_services, all_allowed_accounts, all_allowed_services)
+                if skip_post:
                     continue
 
-                # Skip the post if the guild wanted to ignore that service
-                elif service_id in all_ignored_services[guild_id][game_id]:
-                    logger.info(f"[{guild_id}] Post Skipped. ({post['account']['service']} is in the ignore).")
-                    continue
+                if service_id in url_filters_per_service.keys():
+                    filter_result = self._apply_urlfilters(guild, url_filters_per_service[service_id], em.fields[0].value)
 
-                # Skip the post if the guild has a allowlist whitout the author
-                if len(all_allowed_accounts[guild_id][game_id]) > 0 and account_id in all_allowed_accounts[guild_id][game_id]:
-                    logger.info(f"[{guild_id}] Post Skipped. ({post['account']['identifier']} is not in the allowlist).")
-                    continue
+                    # Only send message if filters are matched if no channel_id
+                    if filter_result == 'skip_post':
+                        continue
 
-                # Skip the post if the guild wanted to ignore the author
-                elif account_id in all_ignored_accounts[guild_id][game_id]:
-                    logger.info(f"[{guild_id}] Post Skipped. ({post['account']['identifier']} is in the ignore list).")
-                    continue
+                    # Means we have to override the current channel
+                    elif isinstance(filter_result, disnake.TextChannel):
+                        channel = filter_result
 
                 embeds.append(em)
                 embeds_size += len(em)
@@ -267,6 +295,8 @@ class Tracker(commands.Cog):
         games = await API.fetch_available_games()
 
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+
         if not games:
             emb_err.title = "❌ API Error"
             emb_err.description = "It seems the DeveloperTracker.com API didn't respond. Please try again later."
@@ -277,6 +307,7 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
 
@@ -290,7 +321,8 @@ class Tracker(commands.Cog):
             if channel_id:
                 msg += f" I'll post new entries in <#{channel_id}>. You should receive the last post in a few moments."
                 # Fetch last post to show everything is working as intended
-                await inter.edit_original_message(msg)
+                emb_success.description = msg
+                await inter.edit_original_message(embed=emb_success)
                 try:
                     await self._fetch_last_post(game_id, inter.guild.get_channel(channel_id), inter.guild)
                 except disnake.Forbidden:
@@ -302,7 +334,8 @@ class Tracker(commands.Cog):
                     await inter.edit_original_message(embed=emb)
             else:
                 msg += " Please use `/dt-set-channel` to receive the latest posts."
-                await inter.edit_original_message(msg)
+                emb_success.description = msg
+                await inter.edit_original_message(embed=emb_success)
 
 
     @commands.slash_command(name="dt-set-channel")
@@ -363,6 +396,7 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
 
@@ -415,6 +449,7 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         games = await API.fetch_available_games()
         if not games:
@@ -427,16 +462,21 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
             accounts = await API.fetch_accounts(game_id)
             account_ids = [a["identifier"] for a in accounts]
             if account_id not in account_ids:
-                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for `{game_name}`.")
+                emb_err.title = "❌ Account Error"
+                emb_err.description = f"`{account_id}` doesn't exists or isn't followed for `{game_name}`."
+                await inter.edit_original_message(embed=emb_err)
             else:
                 await ORM.add_ignored_account(inter.guild_id, game_id, account_id, service_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" muted')
-                await inter.edit_original_message(f'Posts from `{account_id} [{service_id}]` will be ignored from now on for `{game_name}`')
+
+                emb_success.description = f'Posts from `{account_id} [{service_id}]` will be ignored from now on for `{game_name}`'
+                await inter.edit_original_message(embed=emb_success)
 
     @ignorelist_add.sub_command(name="service", description="Ignore posts from a specific service.")
     async def ignorelist_add_service(self, inter: disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games_fw), service_id: str = commands.Param(autocomplete=ac.services_all)):
@@ -444,6 +484,7 @@ class Tracker(commands.Cog):
         await inter.response.defer()
 
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         games = await API.fetch_available_games()
         if not games:
@@ -456,15 +497,20 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
             service_ids = await API.fetch_services(game_id)
             if service_id not in service_ids:
-                await inter.edit_original_message(f"`{service_id}` doesn't exists or isn't followed for `{game_name}`.")
+                emb_err.title = "❌ Service Error"
+                emb_err.description = f"`{service_id}` doesn't exists or isn't followed for `{game_name}`."
+                await inter.edit_original_message(embed=emb_err)
             else:
                 await ORM.add_ignored_service(inter.guild_id, game_id, service_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{service_id}" added to ignorelist for `{game_name}`')
-                await inter.edit_original_message(f'Posts from `{service_id}` will be ignored from now on for `{game_name}`.')
+
+                emb_success.description = f'Posts from `{service_id}` will be ignored from now on for `{game_name}`'
+                await inter.edit_original_message(embed=emb_success)
 
     @ignorelist.sub_command_group(name="remove", description="Remove an account from the ignore.")
     async def ignorelist_rm(self, inter: disnake.ApplicationCommandInteraction):
@@ -476,6 +522,7 @@ class Tracker(commands.Cog):
         await inter.response.defer()
 
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         games = await API.fetch_available_games()
         if not games:
@@ -488,16 +535,20 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
 
             account_ids = await ORM.get_ignored_accounts(inter.guild_id, game_id)
             if account_id not in account_ids:
-                await inter.edit_original_message(f"`{account_id}` isn't in your ignore list.")
+                emb_err.title = "❌ Account Error"
+                emb_err.description = f"`{account_id}` isn't in your ignore list."
+                await inter.edit_original_message(embed=emb_err)
             else:
                 await ORM.rm_ignored_account(inter.guild_id, game_id, account_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" removed from ignorelist for {game_name}')
-                await inter.edit_original_message(f'Posts from `{account_id}` will no longer be ignored for {game_name}.')
+                emb_success.description = f'Posts from `{account_id}` will no longer be ignored for {game_name}.'
+                await inter.edit_original_message(embed=emb_success)
 
     @ignorelist_rm.sub_command(name="service", description="Remove a previously ignored service from the ignore.")
     async def ignorelist_rm_service(self, inter, game_name: str = commands.Param(autocomplete=ac.games_fw), service_id: str = commands.Param(autocomplete=ac.service_ignored)):
@@ -505,6 +556,7 @@ class Tracker(commands.Cog):
         await inter.response.defer()
 
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         games = await API.fetch_available_games()
         if not games:
@@ -517,16 +569,20 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
 
             service_ids = await ORM.get_ignored_services(inter.guild_id, game_id)
             if service_id not in service_ids:
-                await inter.edit_original_message(f"`{service_id}` isn't in your ignore list.")
+                emb_err.title = "❌ Service Error"
+                emb_err.description = f"`{service_id}` isn't in your ignore list."
+                await inter.edit_original_message(embed=emb_err)
             else:
                 await ORM.rm_ignored_service(inter.guild_id, game_id, service_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{service_id}" removed from ignorelist for {game_id}')
-                await inter.edit_original_message(f'Posts from `{service_id}` will no longer be ignored for {game_id}.')
+                emb_success.description = f'Posts from `{service_id}` will no longer be ignored for {game_id}.'
+                await inter.edit_original_message(embed=emb_success)
 
 
     @commands.slash_command(name="dt-allowlist", description="Accept posts only from specific accounts.")
@@ -549,6 +605,7 @@ class Tracker(commands.Cog):
         await inter.response.defer()
 
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         games = await API.fetch_available_games()
         if not games:
@@ -561,16 +618,20 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
             accounts = await API.fetch_accounts(game_id)
             account_ids = [a['identifier'] for a in accounts if a['service'] == service_id]
             if account_id not in account_ids:
-                await inter.edit_original_message(f"`{account_id}` doesn't exists or isn't followed for `{game_name}`.")
+                emb_err.title = "❌ Account Error"
+                emb_err.description = f"`{account_id}` doesn't exists or isn't followed for `{game_name}`."
+                await inter.edit_original_message(embed=emb_err)
             else:
                 await ORM.add_allowed_account(inter.guild_id, game_id, account_id, service_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" added to allowlist for {game_name} ')
-                await inter.edit_original_message(f'The account `{account_id}` has been added to the allowlist for `{game_name}`. From now on, only posts of service(s)/account(s) from this allowlist will be sent.')
+                emb_success.description = f'The account `{account_id}` has been added to the allowlist for `{game_name}`. From now on, only posts of service(s)/account(s) from this allowlist will be sent.'
+                await inter.edit_original_message(embed=emb_success)
 
     @allowlist_add.sub_command(name="service", description="Allow only posts from specific services.")
     async def allowlist_add_service(self, inter: disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games_fw), service_id: str = commands.Param(autocomplete=ac.services_all)):
@@ -578,6 +639,7 @@ class Tracker(commands.Cog):
         await inter.response.defer()
 
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         games = await API.fetch_available_games()
         if not games:
@@ -590,15 +652,19 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
             service_ids = await API.fetch_services(game_id)
             if service_id not in service_ids:
-                await inter.edit_original_message(f"`{service_id}` doesn't exists or isn't followed for `{game_name}`.")
+                emb_err.title = "❌ Service Error"
+                emb_err.description = f"`{service_id}` doesn't exists or isn't followed for `{game_name}`."
+                await inter.edit_original_message(embed=emb_err)
             else:
                 await ORM.add_allowed_service(inter.guild_id, game_id, service_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{service_id}" added to allowlist for `{game_name}`')
-                await inter.edit_original_message(f'The service `{service_id}` as been added to the allowlist for `{game_name}`. From now on, only posts of service(s)/account(s) from this allowlist will be sent.')
+                emb_success.description = f'The service `{service_id}` has been added to the allowlist for `{game_name}`. From now on, only posts of service(s)/account(s) from this allowlist will be sent.'
+                await inter.edit_original_message(embed=emb_success)
 
     @allowlist.sub_command_group(name="remove", description="Remove an account from the allowlist.")
     async def allowlist_rm(self, inter: disnake.ApplicationCommandInteraction):
@@ -610,6 +676,7 @@ class Tracker(commands.Cog):
         await inter.response.defer()
 
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         games = await API.fetch_available_games()
         if not games:
@@ -622,16 +689,20 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
 
             account_ids = await ORM.get_allowed_accounts(inter.guild_id, game_id)
             if account_id not in account_ids:
-                await inter.edit_original_message(f"`{account_id}` isn't in your ignore list.")
+                emb_err.title = "❌ Account Error"
+                emb_err.description = f"`{account_id}` isn't in your allowlist."
+                await inter.edit_original_message(embed=emb_err)
             else:
                 await ORM.rm_allowed_account(inter.guild_id, game_id, account_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{account_id}" removed from allowlist for {game_name}')
-                await inter.edit_original_message(f'The account `{account_id}` has been removed from the allowlist for {game_name}.')
+                emb_success.description = f'The account `{account_id}` has been removed from the allowlist for `{game_name}`.'
+                await inter.edit_original_message(embed=emb_success)
 
     @allowlist_rm.sub_command(name="service", description="Remove a previously ignored service from the ignore.")
     async def allowlist_service(self, inter, game_name: str = commands.Param(autocomplete=ac.games_fw), service_id: str = commands.Param(autocomplete=ac.service_allowed)):
@@ -639,6 +710,7 @@ class Tracker(commands.Cog):
         await inter.response.defer()
 
         emb_err = disnake.Embed(colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         games = await API.fetch_available_games()
         if not games:
@@ -651,16 +723,213 @@ class Tracker(commands.Cog):
             emb_err.title = "❌ Game Error"
             emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
             await inter.edit_original_message(embed=emb_err)
+            return
         else:
             game_id = games[game_name]
 
             service_ids = await ORM.get_allowed_services(inter.guild_id, game_id)
             if service_id not in service_ids:
-                await inter.edit_original_message(f"`{service_id}` isn't in your ignore list.")
+                emb_err.title = "❌ Service Error"
+                emb_err.description = f"`{service_id}` isn't in your allowlist."
+                await inter.edit_original_message(embed=emb_err)
             else:
                 await ORM.rm_allowed_service(inter.guild_id, game_id, service_id)
                 logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{service_id}" unmuted for {game_id}')
-                await inter.edit_original_message(f' `{service_id}` has been removed from the allowlist for {game_id}.')
+                emb_success.description = f'The service `{service_id}` has been removed from the allowlist for `{game_name}`.'
+                await inter.edit_original_message(embed=emb_success)
+
+    @commands.slash_command(name="dt-urlfilters", description="Accept posts only with specific keywords in their origin URLs.")
+    @commands.default_member_permissions(manage_guild=True)
+    async def manage_urlfilters(self, inter: disnake.ApplicationCommandInteraction):
+        pass
+
+    @manage_urlfilters.sub_command(name="global", description="Receive only posts with specific keywords in their origin URLs.")
+    async def edit_urlfilters_global(self, inter: disnake.ApplicationCommandInteraction,
+        game_name: str = commands.Param(autocomplete=ac.games_fw),
+        service_id: str = commands.Param(autocomplete=ac.services_urlfilters_all)):
+
+        games = await API.fetch_available_games()
+        game_id = None
+        emb_err = disnake.Embed(colour=14242639)
+
+        if game_name not in games.keys():
+            emb_err.title = "❌ Game Error"
+            emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
+            await inter.send(embed=emb_err)
+        else:
+            game_id = games[game_name]
+
+        current_filters = await ORM.get_urlfilters(inter.guild_id, game_id, service_id)
+
+        modal_components = []
+        current_filters_raw = ""
+
+        if len(current_filters) == 1 and not current_filters[0][0]:
+            current_filters_raw = current_filters[0][1]
+        elif len(current_filters) > 1:
+            modal_components.append(
+                disnake.ui.TextInput(
+                    label="Warning !",
+                    value="You have multiple filters for this service. Submitting this modal will erase them !",
+                    style=disnake.TextInputStyle.short,
+                )
+            )
+        modal_components.append(
+            disnake.ui.TextInput(
+                label="URL Filters - Separated by commas (,)",
+                custom_id="url_filters_input",
+                value=current_filters_raw,
+                placeholder="forum/1,forum/4",
+                max_length=1000,
+                style=disnake.TextInputStyle.paragraph,
+            )
+        )
+        title = f"{game_name} [{service_id}]"
+        title_shortened = title[:40] + "..." if len(title) > 44 else title
+        await inter.response.send_modal(
+            title=title_shortened,
+            custom_id=f"url_filters_modal-{inter.id}",
+            components=modal_components
+        )
+        try:
+            modal_inter: disnake.ModalInteraction = await self.bot.wait_for(
+                "modal_submit",
+                check=lambda i: i.custom_id == f"url_filters_modal-{inter.id}" and i.author.id == inter.author.id,
+                timeout=300,
+            )
+        except asyncio.TimeoutError:
+            # user didn't submit the modal, so a timeout error is raised
+            # we don't have any action to take, so just return early
+
+            emb_err.title = "❌ Timeout Error"
+            emb_err.description = "Modal submission was not received quickly enough."
+            await inter.send(embed=emb_err, ephemeral=True)
+            return
+
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+        emb_success.description = f"Global URL filters for {game_name} [{service_id}] have been updated.\n" \
+                                    "Only posts with URLs containing the specified keywords will be sent." \
+                                    "\n\n **Note:**" \
+                                    "\n- If you want to clear all current filters, use `dt-clear` instead." \
+                                    "\n- You can see all your courrent filters with `dt-config`."
+        emb_success.add_field(name="Filters", value=modal_inter.text_values["url_filters_input"])
+
+        new_filters = modal_inter.text_values["url_filters_input"]
+        if new_filters and game_id:
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{new_filters}" added as URL filters for {game_name} [{service_id}]')
+            await ORM.update_urlfilters_global(inter.guild_id, game_id, service_id, modal_inter.text_values["url_filters_input"])
+        await modal_inter.response.send_message(embed=emb_success)
+
+    @manage_urlfilters.sub_command(name="channel", description="Dispatch posts with specific keywords in their origin URLs to a specific channel.")
+    async def edit_urlfilters_channel(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        channel: disnake.TextChannel,
+        game_name: str = commands.Param(autocomplete=ac.games_fw),
+        service_id: str = commands.Param(autocomplete=ac.services_urlfilters_channel),
+    ):
+
+        games = await API.fetch_available_games()
+        current_channel_filters = None
+
+        emb_err = disnake.Embed(colour=14242639)
+
+        if game_name not in games.keys():
+            emb_err.title = "❌ Game Error"
+            emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
+            await inter.send(embed=emb_err)
+            return
+        else:
+            game_id = games[game_name]
+            current_channel_filters = await ORM.get_urlfilters_channel(inter.guild_id, game_id, service_id, channel.id)
+
+
+        title = f"{game_name} [{service_id}] - {channel.name}"
+        title_shortened = title[:40] + "..." if len(title) > 44 else title
+        warning_msg = f"Make sure DevTracker is allowed to send messages in #{channel.name}, otherwise you won't receive any post."
+
+        await inter.response.send_modal(
+            title=title_shortened,
+            custom_id=f"url_filters_modal-{inter.id}",
+            components=[
+                disnake.ui.TextInput(
+                    label="Warning !",
+                    custom_id="url_filters_warning",
+                    value=warning_msg,
+                    max_length=300,
+                    style=disnake.TextInputStyle.paragraph,
+                ),
+                disnake.ui.TextInput(
+                    label="URL Filters - Separated by commas (,)",
+                    custom_id="url_filters_input",
+                    value=current_channel_filters,
+                    placeholder="forum/1,forum/4",
+                    max_length=1000,
+                    style=disnake.TextInputStyle.paragraph,
+                )
+            ]
+        )
+        try:
+            modal_inter: disnake.ModalInteraction = await self.bot.wait_for(
+                "modal_submit",
+                check=lambda i: i.custom_id == f"url_filters_modal-{inter.id}" and i.author.id == inter.author.id,
+                timeout=300,
+            )
+        except asyncio.TimeoutError:
+            # user didn't submit the modal, so a timeout error is raised
+            emb_err = disnake.Embed(colour=14242639)
+            emb_err.title = "❌ Timeout Error"
+            emb_err.description = "Modal submission was not received quickly enough."
+            await inter.send(embed=emb_err, ephemeral=True)
+            return
+
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+        emb_success.description = f"URL filters for **{game_name}** [`{service_id}`] have been updated.\n" \
+                                  f"Posts with URLs containing the specified keywords will be sent to <#{channel.id}>." \
+                                    "\n\n **Note:**" \
+                                    "\n- If you want to clear all current filters, use `dt-clear` instead." \
+                                    "\n- You can see all your courrent filters with `dt-config`."
+
+        emb_success.add_field(name="Filters", value=modal_inter.text_values["url_filters_input"])
+
+        new_filters = modal_inter.text_values["url_filters_input"]
+        if new_filters:
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{new_filters}" added as URL filters for {game_name} [{service_id}]')
+            await ORM.update_urlfilters_channel(inter.guild_id, game_id, service_id, new_filters, channel.id)
+            await modal_inter.response.send_message(embed=emb_success)
+        else:
+            emb_neutral = disnake.Embed(description=" ❌ No filters were provided. No changes were made.")
+            await modal_inter.response.send_message(embed=emb_neutral)
+
+    @manage_urlfilters.sub_command(name="clear", description="Clear all current urlfilters.")
+    async def clear_urlfilters(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        game_name: str = commands.Param(autocomplete=ac.games_fw),
+        service_id: str = commands.Param(autocomplete=ac.services_urlfilters_clear),
+    ):
+        await inter.response.defer()
+
+        games = await API.fetch_available_games()
+        game_id = None
+
+        emb_err = disnake.Embed(colour=14242639)
+        if game_name in games.keys():
+            game_id = games[game_name]
+
+            if game_id:
+                logger.info(f'{inter.guild.name} [{inter.guild_id}] : URL filters cleared for {game_name} [{service_id}]')
+                await ORM.clear_urlfilters(inter.guild_id, game_id, service_id)
+
+                emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+                emb_success.description = f"All URL filters for **{game_name}** [`{service_id}`] have been cleared."
+                await inter.edit_original_message(embed=emb_success)
+                return
+
+        emb_err.title = "❌ Game Error"
+        emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
+        await inter.edit_original_message(embed=emb_err)
+
 
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS
@@ -677,13 +946,17 @@ class Tracker(commands.Cog):
         local_games = await ORM.get_local_games()
         game_id = [g[0] for g in local_games if g[1] == game][0]
 
+        emb_error = disnake.Embed(title="❌  Error", colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+
         if not game_id:
-            await inter.edit_original_message(f"`{game}` isn't in your following list.")
+            emb_error.description = f"`{game}` isn't in your following list."
+            await inter.edit_original_message(embed=emb_error)
         else:
             await ORM.rm_followed_game(game_id, inter.guild_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{game_id}" unfollowed')
-            msg = f'`{game}` has been removed from the following list.'
-            await inter.edit_original_message(msg)
+            emb_success.description = f'`{game}` has been removed from the following list.'
+            await inter.edit_original_message(embed=emb_success)
 
     @commands.slash_command(name="dt-unset-channel")
     @commands.default_member_permissions(manage_guild=True)
@@ -695,9 +968,12 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+
         await ORM.unset_main_channel(inter.guild_id)
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Default channel deleted')
-        await inter.edit_original_message("You don't have a default channel anymore, make sure you have one set for each followed games using `/dt-status`.")
+        emb_success.description = "You don't have a default channel anymore, make sure you have one set for each followed games using `/dt-status`."
+        await inter.edit_original_message(embed=emb_success)
 
     @unset_channel.sub_command(name="game", description="Unset the notification channel per game.")
     async def unset_game_channel(self, inter: disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games)):
@@ -707,12 +983,17 @@ class Tracker(commands.Cog):
         local_games = await ORM.get_local_games()
         game_id = [g[0] for g in local_games if g[1] == game][0]
 
+        emb_error = disnake.Embed(title="❌  Error", colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+
         if not game_id:
-            await inter.edit_original_message("The game you entered isn't in your following list.")
+            emb_error.description = f"`{game}` isn't in your following list."
+            await inter.edit_original_message(embed=emb_error)
         else:
             await ORM.unset_game_channel(inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : Unset custom channel for `{game}`')
-            await inter.edit_original_message(f"The notification channel for `{game}` is no longer set.")
+            emb_success.description = f"The notification channel for `{game}` is no longer set."
+            await inter.edit_original_message(emb=emb_success)
 
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS
@@ -726,10 +1007,14 @@ class Tracker(commands.Cog):
 
         await inter.response.defer()
 
+        emb_error = disnake.Embed(title="❌  Error", colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+
         logger.info(f'Forcing fetch of {post_id}.')
         games = await API.fetch_available_games()
         if game_name not in games.keys():
-            await inter.edit_original_message(f"`{game_name}` is either an invalid game or unsupported.")
+            emb_error.description = f"`{game_name}` is either an invalid game or unsupported."
+            await inter.edit_original_message(embed=emb_error)
         else:
             game_id = games[game_name]
             post = await API.fetch_post(post_id, game_id)
@@ -742,10 +1027,36 @@ class Tracker(commands.Cog):
             logger.debug(soup)
             logger.info(soup.prettify())
             if len(post) == 0:
-                await inter.edit_original_message(f"`{post_id}` not found.")
+                emb_error.description = f"`{post_id}` not found."
+                await inter.edit_original_message(embed=emb_error)
             else:
                 em = self._generate_embed(post[0])
-                await inter.edit_original_message(embed=em)
+
+                all_ignored_accounts = await ORM.get_all_ignored_accounts_per_guild()
+                all_ignored_services = await ORM.get_all_ignored_services()
+                all_allowed_accounts = await ORM.get_all_allowed_accounts_per_guild()
+                all_allowed_services = await ORM.get_all_allowed_services()
+
+                should_skip = self._should_skip(
+                    inter.guild_id,
+                    game_id,
+                    post[0]['account']['service'],
+                    post[0]['account']['identifier'],
+                    all_allowed_services,
+                    all_ignored_services,
+                    all_allowed_accounts,
+                    all_ignored_accounts
+                )
+
+                url_filters = await ORM.get_urlfilters(inter.guild_id, game_id, post[0]['account']['service'])
+                filter_result = self._apply_urlfilters(inter.guild, url_filters, em.fields[0].value)
+
+                msg = f"**Should skip:** {should_skip}\n"
+                if isinstance(filter_result, disnake.TextChannel):
+                    msg += f"**Filter result:** <#{filter_result.id}>"
+                else:
+                    msg += f"**Filter result:** `{filter_result}`"
+                await inter.edit_original_message(content=msg, embed=em)
 
     @commands.slash_command(name="dt-save-post-ids", description="Update posts state of the Bot.", guild_ids=[984016998084247582, 687999396612407341])
     @commands.default_member_permissions(manage_guild=True)
@@ -756,8 +1067,12 @@ class Tracker(commands.Cog):
         games = await API.fetch_available_games()
         game_ids = [gid for gid in games.values()]
 
+        emb_error = disnake.Embed(title="❌  API Error", colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+
         if not all([gid in posts_per_game.keys() for gid in game_ids]):
-            await inter.edit_original_message("Couldn't fetch all games (❌ API Errors encountered). Aborting...")
+            emb_error.description = "Couldn't fetch all games. Aborting..."
+            await inter.edit_original_message(embed=emb_error)
             return
 
         for game_id, posts in posts_per_game.items():
@@ -766,7 +1081,8 @@ class Tracker(commands.Cog):
             logger.debug(post_ids)
             await ORM.set_saved_post_ids(game_id, post_ids)
 
-        await inter.edit_original_message("current `post_ids` saved successfully")
+        emb_success.description = "The bot state has been updated."
+        await inter.edit_original_message(embed=emb_success)
 
     @commands.slash_command(name="dt-get-post-ids", description="Show the bot state.", guild_ids=[984016998084247582, 687999396612407341])
     @commands.default_member_permissions(manage_guild=True)
@@ -1026,6 +1342,52 @@ class Tracker(commands.Cog):
             emb.set_image(img_url)
 
         return emb
+
+    def _should_skip(self, guild_id, game_id, service_id, account_id, all_allowed_services, all_ignored_services, all_allowed_accounts, all_ignored_accounts):
+
+        # Always send allowed services
+        if len(all_allowed_services[guild_id][game_id]) > 0 and service_id in all_allowed_services[guild_id][game_id]:
+            logger.info(f"[{guild_id}] Post Sent. ({service_id} is in the allowlist).")
+            return False
+
+        # Always send allowed accounts
+        elif len(all_allowed_accounts[guild_id][game_id]) > 0 and account_id in all_allowed_accounts[guild_id][game_id]:
+            logger.info(f"[{guild_id}] Post Sent. ({account_id} is in the allowlist).")
+            return False
+
+        # Check if service is blacklisted
+        if len(all_ignored_services[guild_id][game_id]) > 0 and service_id in all_ignored_services[guild_id][game_id]:
+            logger.info(f"[{guild_id}] Post Skipped. ({service_id} is in the ignore).")
+            return True
+
+        # Check if account is blacklisted
+        elif len(all_ignored_accounts[guild_id][game_id]) > 0 and account_id in all_ignored_accounts[guild_id][game_id]:
+            logger.info(f"[{guild_id}] Post Skipped. ({account_id} is in the ignore).")
+            return True
+
+        return False
+
+    def _apply_urlfilters(self, guild, url_filters, em_url):
+
+        # Only send message if filters are matched if no channel_id
+        if len(url_filters) == 1 and not url_filters[0][0]:
+            filters_list = url_filters[0][1].split(',')
+            filters_list_sanitized = [f for f in filters_list if f]
+            if not any(f.strip() in em_url for f in filters_list_sanitized):
+                logger.info(f"[{guild.id}] Post Skipped. ({em_url} didn't match {filters_list} [Single Filter Mode]).")
+                return 'skip_post'
+
+        # Send everything but adapt channel accordingly
+        elif len(url_filters) > 0:
+            for channel_id, filters in url_filters:
+                filters_list = filters.split(',')
+                filters_list_sanitized = [f for f in filters_list if f]
+                if channel_id and any(f.strip() in em_url for f in filters_list_sanitized):
+                    new_channel = guild.get_channel(channel_id)
+                    logger.info(f"[{guild.id}] Overriding channel by #{new_channel.name}: {em_url} matched {filters} [Multi Filter Mode]).")
+                    return new_channel
+
+        return False
 
 
 def setup(bot: commands.Bot):

@@ -80,6 +80,33 @@ async def services_all(inter: disnake.ApplicationCommandInteraction, user_input:
     max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
     return max_list[0:24]
 
+async def services_urlfilters_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
+    games = await API.fetch_available_games()
+    if inter.options['global']['game_name'] not in games.keys():
+        return ['[ERROR] Invalid game provided']
+    game_id = games[inter.options['global']['game_name']]
+    service_ids = await API.fetch_services(game_id)
+    max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
+    return max_list[0:24]
+
+async def services_urlfilters_channel(inter: disnake.ApplicationCommandInteraction, user_input: str):
+    games = await API.fetch_available_games()
+    if inter.options['channel']['game_name'] not in games.keys():
+        return ['[ERROR] Invalid game provided']
+    game_id = games[inter.options['channel']['game_name']]
+    service_ids = await API.fetch_services(game_id)
+    max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
+    return max_list[0:24]
+
+async def services_urlfilters_clear(inter: disnake.ApplicationCommandInteraction, user_input: str):
+    games = await API.fetch_available_games()
+    if inter.options['clear']['game_name'] not in games.keys():
+        return ['[ERROR] Invalid game provided']
+    game_id = games[inter.options['clear']['game_name']]
+    service_ids = await API.fetch_services(game_id)
+    max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
+    return max_list[0:24]
+
 async def service_ignored(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await ORM.get_followed_games(inter.guild_id)
     if inter.options['remove']['service']['game_name'] not in games.keys():

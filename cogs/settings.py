@@ -54,6 +54,7 @@ class Settings(commands.Cog):
             **Filtering posts**
             `/dt-allowlist`: Only posts matching the accounts or services in this list will be sent.
             `/dt-ignorelist`: Posts matching the accounts or services in this list will be ignored.
+            `/dt-urlfilter`: Only posts matching the URL filters in this list will be sent. Can be used to send posts to more than one channel.
 
             __Notes__:
             - Each `allowlist` or `ignorelist` is game-specific, so you can have different filters for each game.
@@ -105,6 +106,8 @@ class Settings(commands.Cog):
         allowed_accounts = await ORM.get_allowed_accounts_per_game(inter.guild_id)
         allowed_services = await ORM.get_allowed_services_per_game(inter.guild_id)
 
+        url_filters_per_game = await ORM.get_urlfilters_per_game(inter.guild_id)
+
         fw_tabs = self._generate_fw_table(fw_status, inter.guild)
 
         local_game_data = await ORM.get_local_games()
@@ -118,6 +121,8 @@ class Settings(commands.Cog):
         ignored_serv_tabs = self._generate_ignored_table(games, ignored_services)
         allowed_acc_tabs = self._generate_ignored_table(games, allowed_accounts)
         allowed_serv_tabs = self._generate_ignored_table(games, allowed_services)
+
+        url_filters_tabs = self._generate_urlfilters_table(games, url_filters_per_game, inter.guild)
 
         filter_mode = None
         if (len(ignored_accounts) > 0 or len(ignored_services) > 0) and not (len(allowed_accounts) > 0 or len(allowed_services) > 0):
@@ -149,12 +154,23 @@ class Settings(commands.Cog):
 
         embeds = []
         embeds.append(emb)
+
+        emb_fw_suppl = disnake.Embed(
+            color=7506394,
+            title="📡 Followed Games"
+        )
+        emb_fw_suppl.description = ""
         for fw_tab in fw_tabs[1:]:
-            emb = disnake.Embed(
-                color=7506394
-            )
-            emb.add_field(name='📡 Followed Games', value=fw_tab, inline=False)
-            embeds.append(emb)
+            emb_fw_suppl.description += fw_tab
+            if len(emb_fw_suppl.description) > 4096:
+                embeds.append(emb_fw_suppl)
+                emb_fw_suppl = disnake.Embed(
+                    color=7506394,
+                    title="📡 Followed Games"
+                )
+                emb_fw_suppl.description = ""
+        if emb_fw_suppl.description:
+            embeds.append(emb_fw_suppl)
 
         if emb_err.description:
             embeds.append(emb_err)
@@ -174,36 +190,50 @@ class Settings(commands.Cog):
             if acc_tab == "None\n":
                 break
             emb = disnake.Embed(
-                color=16250871
+                color=16250871,
+                title="🔊 Allowed accounts",
+                description=acc_tab
             )
-            emb.add_field(name='🔊 Allowed accounts', value=acc_tab, inline=False)
             embeds.append(emb)
 
         for serv_tab in allowed_serv_tabs:
             if serv_tab == "None\n":
                 break
             emb = disnake.Embed(
-                color=16250871
+                color=16250871,
+                title="🔊 Allowed services",
+                description=serv_tab
             )
-            emb.add_field(name='🔊 Allowed services', value=serv_tab, inline=False)
             embeds.append(emb)
 
         for acc_tab in ignored_acc_tabs:
             if acc_tab == "None\n":
                 break
             emb = disnake.Embed(
-                color=2698028
+                color=2698028,
+                title="🔇 Ignored accounts",
+                description=acc_tab
             )
-            emb.add_field(name='🔇 Ignored accounts', value=acc_tab, inline=False)
             embeds.append(emb)
 
         for serv_tab in ignored_serv_tabs:
             if serv_tab == "None\n":
                 break
             emb = disnake.Embed(
-                color=2698028
+                color=2698028,
+                title="🔇 Ignored services",
+                description=serv_tab
             )
-            emb.add_field(name='🔇 Ignored services', value=serv_tab, inline=False)
+            embeds.append(emb)
+
+        for urlfilters_tab in url_filters_tabs:
+            if urlfilters_tab == "None\n":
+                break
+            emb = disnake.Embed(
+                color=2698028,
+                title="🗃️ URL Filters",
+                description=urlfilters_tab
+            )
             embeds.append(emb)
 
         # Max 10 embeds can be sent at once
@@ -258,6 +288,58 @@ class Settings(commands.Cog):
         fw_tabs.append(fw_tab)
 
         return fw_tabs
+
+
+    def _generate_urlfilters_table(self, games, urlfilters_per_game, guild: disnake.Guild):
+
+        if not urlfilters_per_game:
+            return ['None\n']
+
+        urlfilters_tabs = []
+        urlfilter_tab = ''
+
+        for game_id, urlfilters in urlfilters_per_game.items():
+            max_service_size = max(urlfilters,key=lambda f: len(f[0]))
+            max_lg = len(max_service_size[0])
+
+            urlfilter_tab += f"**{games[game_id]}**\n"
+            for service, channel_id, filter in urlfilters:
+
+                filter_line = ""
+                offset = max_lg - len(service)
+                filter_line += f"`{service}"
+                filter_line += " "*offset
+                if channel_id:
+                    error_msg = ''
+                    bot_member = guild.get_member(self.bot.user.id)
+                    channel = guild.get_channel(channel_id)
+                    perms = channel.permissions_for(bot_member)
+
+                    if not perms.view_channel:
+                        error_msg = "**[ERROR]** Missing `View Channel` Permission"
+                    if not perms.send_messages:
+                        error_msg = "**[ERROR]** Missing `Send Message` Channel Permission"
+
+                    if not error_msg:
+                        filter_line += f"`  |  <#{channel_id}> - `{filter}`\n"
+                    else:
+                        filter_line += f"`  |  <#{channel_id}> - {error_msg}\n"
+
+                else:
+                    filter_line += f"`  | [Global] - {filter}\n"
+
+                # Max Embed description size is 4096 characters
+                if len(filter_line) + len(urlfilter_tab) > 4096:
+                    urlfilters_tabs.append(urlfilter_tab)
+                    urlfilter_tab = ''
+
+                urlfilter_tab += filter_line
+
+            urlfilters_tabs.append(urlfilter_tab)
+            urlfilter_tab = ''
+
+        return urlfilters_tabs
+
 
     def _generate_ignored_table(self, games, ignored_data):
 

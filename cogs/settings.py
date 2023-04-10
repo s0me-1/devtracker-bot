@@ -326,7 +326,7 @@ class Settings(commands.Cog):
                         filter_line += f"`  |  <#{channel_id}> - {error_msg}\n"
 
                 else:
-                    filter_line += f"`  | [Global] - {filter}\n"
+                    filter_line += f"`  | [Global] - `{filter}`\n"
 
                 # Max Embed description size is 4096 characters
                 if len(filter_line) + len(urlfilter_tab) > 4096:

@@ -37,7 +37,7 @@ logger = logging.getLogger('bot')
 
 class DevTracker(commands.InteractionBot):
 
-    __version__ = "1.7.1"
+    __version__ = "1.7.2"
 
     def __init__(self):
 

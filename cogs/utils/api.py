@@ -67,7 +67,7 @@ class API:
     async def fetch_posts(self, game_id):
         url = f'{self.api_baseurl}/{game_id}/posts'
 
-        timeout = ClientTimeout(total=15)
+        timeout = ClientTimeout(total=10)
         async with ClientSession(headers=self.headers, timeout=timeout) as session:
             try:
                 async with session.get(url) as resp:
@@ -92,7 +92,7 @@ class API:
 
     async def fetch_all_posts(self, game_ids):
 
-        timeout = ClientTimeout(total=60)
+        timeout = ClientTimeout(total=10)
         async with ClientSession(headers=self.headers, timeout=timeout) as session:
             try:
                 res = await asyncio.gather(
@@ -150,7 +150,7 @@ class API:
 
     async def fetch_all_accounts(self, game_ids):
 
-        timeout = ClientTimeout(total=60)
+        timeout = ClientTimeout(total=10)
         async with ClientSession(headers=self.headers, timeout=timeout) as session:
             try:
                 res = await asyncio.gather(

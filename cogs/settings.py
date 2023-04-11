@@ -85,9 +85,8 @@ class Settings(commands.Cog):
         default_channel_id = await ORM.get_main_channel(inter.guild_id)
 
         chname = 'Not set'
-        emb_err = None
+        emb_err = disnake.Embed(colour=14242639)
         if default_channel_id:
-            emb_err = disnake.Embed(colour=14242639)
             emb_err.title = "❌ Permission Error"
             bot_member = inter.guild.get_member(self.bot.user.id)
             channel = inter.guild.get_channel(default_channel_id)

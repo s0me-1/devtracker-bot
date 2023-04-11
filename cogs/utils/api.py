@@ -92,7 +92,7 @@ class API:
 
     async def fetch_all_posts(self, game_ids):
 
-        timeout = ClientTimeout(total=10)
+        timeout = ClientTimeout(total=2)
         async with ClientSession(headers=self.headers, timeout=timeout) as session:
             try:
                 res = await asyncio.gather(

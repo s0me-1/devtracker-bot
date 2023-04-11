@@ -833,7 +833,7 @@ class ORM:
             url_filters = defaultdict(list)
             async with conn.execute(query, params) as cr:
                 async for row in cr:
-                    url_filters[row['service_id']].append(tuple(row['channel_id'], row['filters']))
+                    url_filters[row['service_id']].append((row['channel_id'], row['filters']))
 
             return url_filters
 

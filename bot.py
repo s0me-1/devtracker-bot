@@ -5,6 +5,7 @@ import sec
 import disnake
 from disnake.ext import commands
 from cogs.utils.database import ORM
+import sentry_sdk
 
 # Logger Setup
 parser = argparse.ArgumentParser()
@@ -34,6 +35,18 @@ if level is None:
 
 logging.basicConfig(level=level, format='%(asctime)s %(levelname)s [%(name)s]: %(message)s')
 logger = logging.getLogger('bot')
+
+sentry_dsn = sec.load('sentry_dsn')
+if sentry_dsn:
+    logger.info('Sentry DSN found, initializing Sentry SDK.')
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0
+    )
 
 class DevTracker(commands.InteractionBot):
 

@@ -16,6 +16,7 @@ services:
       - bot_token
       - api_token
       - api_base
+      - sentry_dsn
 
   devtracker-bot-debug:
     profiles: ["debug"]
@@ -34,6 +35,7 @@ services:
       - api_base
       - debug_bot_token
       - debug_guild_id
+      - sentry_dsn
 
 secrets:
   bot_token:
@@ -46,3 +48,5 @@ secrets:
     file: debug_bot_token.sec
   debug_guild_id:
     file: debug_guild_id.sec
+  sentry_dsn:
+    file: sentry_dsn.sec

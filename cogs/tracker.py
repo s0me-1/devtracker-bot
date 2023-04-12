@@ -83,7 +83,7 @@ class Tracker(commands.Cog):
     @tasks.loop(seconds=30)
     async def resfresh_posts(self):
 
-        logger.info('Refreshing posts.')
+        logger.debug('Refreshing posts.')
         posts_per_gid = await self._fetch_posts()
         ordered_fws = await self._fetch_fw()
 
@@ -165,7 +165,7 @@ class Tracker(commands.Cog):
             elif default_channel_id:
                 channel = guild.get_channel(default_channel_id)
             else:
-                logger.warning(f'{guild.name} [{guild.id}] follows {game_id} but hasnt set any channel')
+                logger.debug(f'{guild.name} [{guild.id}] follows {game_id} but hasnt set any channel')
 
                 # We can see the owner only if we have the Members privileged intent
                 if not guild.owner:
@@ -247,7 +247,7 @@ class Tracker(commands.Cog):
                     for gid in embeds_per_gid.keys()
                 ],
             )
-        logger.info('Refresh task completed.')
+        logger.debug('Refresh task completed.')
 
     async def _send_embeds(self, channel: disnake.TextChannel, messages, last_post_id):
         for msg in messages:
@@ -1130,7 +1130,7 @@ class Tracker(commands.Cog):
         follows = await ORM.get_all_follows()
 
         # Minimize calls on DBs/Disnake per guilds
-        logger.info(f'{len(follows)} follows retrieved.')
+        logger.debug(f'{len(follows)} follows retrieved.')
         return sorted(follows, key=lambda fw: fw[2])
 
     async def _fetch_posts(self):
@@ -1155,7 +1155,7 @@ class Tracker(commands.Cog):
             for gid in gids:
                 posts.pop(gid)
 
-        err_msg = err_stats if err_stats else 'No errors.'
+        err_msg = err_stats if err_stats else 'No errors'
         logger.info(f'{nb_posts} posts retrieved ({err_msg}).')
         return posts
 

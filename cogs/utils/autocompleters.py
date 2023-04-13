@@ -21,6 +21,8 @@ async def games(inter: disnake.ApplicationCommandInteraction, user_input: str):
     try:
         games = await API.fetch_available_games()
         max_list = [g for g in games.keys() if user_input.lower() in g.lower()]
+        if len(max_list) == 0:
+            return ['[ERROR] API didn\'t return any game, retry later.']
         return max_list[0:24]
     except Exception as e:
         logger.error(e)
@@ -30,11 +32,15 @@ async def games(inter: disnake.ApplicationCommandInteraction, user_input: str):
 async def games_fw(inter: disnake.ApplicationCommandInteraction, user_input: str):
     fw_game_ids = await ORM.get_followed_games(inter.guild_id)
     max_list = [g for g in fw_game_ids.keys() if (user_input.lower() in g.lower())]
+    if len(max_list) == 0:
+        return ['[ERROR] You are not following any game']
     return max_list[0:24]
 
 async def accounts_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
     try:
         games = await API.fetch_available_games()
+        if 'game_name' not in inter.options['add']['account'].keys():
+            return ['[ERROR] Please select a game first']
         if inter.options['add']['account']['game_name'] not in games.keys():
             return ['[ERROR] Invalid game provided']
         game_id = games[inter.options['add']['account']['game_name']]
@@ -56,6 +62,8 @@ async def accounts_all(inter: disnake.ApplicationCommandInteraction, user_input:
 async def accounts_service_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
     try:
         games = await API.fetch_available_games()
+        if 'game_name' not in inter.options['add']['account'].keys():
+            return ['[ERROR] Please select a game first']
         if inter.options['add']['account']['game_name'] not in games.keys():
             return ['[ERROR] Invalid game provided']
         game_id = games[inter.options['add']['account']['game_name']]
@@ -69,6 +77,8 @@ async def accounts_service_all(inter: disnake.ApplicationCommandInteraction, use
 
 async def accounts_ignored(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await ORM.get_followed_games(inter.guild_id)
+    if 'game_name' not in inter.options['remove']['account'].keys():
+        return ['[ERROR] Please select a game first']
     if inter.options['remove']['account']['game_name'] not in games.keys():
         return ['[ERROR] Invalid game provided']
     game_id = games[inter.options['remove']['account']['game_name']]
@@ -79,6 +89,8 @@ async def accounts_ignored(inter: disnake.ApplicationCommandInteraction, user_in
 
 async def accounts_allowed(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await ORM.get_followed_games(inter.guild_id)
+    if 'game_name' not in inter.options['remove']['account'].keys():
+        return ['[ERROR] Please select a game first']
     if inter.options['remove']['account']['game_name'] not in games.keys():
         return ['[ERROR] Invalid game provided']
     game_id = games[inter.options['remove']['account']['game_name']]
@@ -90,6 +102,8 @@ async def accounts_allowed(inter: disnake.ApplicationCommandInteraction, user_in
 async def services_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
     try:
         games = await API.fetch_available_games()
+        if 'game_name' not in inter.options['add']['service'].keys():
+            return ['[ERROR] Please select a game first']
         if inter.options['add']['service']['game_name'] not in games.keys():
             return ['[ERROR] Invalid game provided']
         game_id = games[inter.options['add']['service']['game_name']]
@@ -103,6 +117,8 @@ async def services_all(inter: disnake.ApplicationCommandInteraction, user_input:
 async def services_urlfilters_all(inter: disnake.ApplicationCommandInteraction, user_input: str):
     try:
         games = await API.fetch_available_games()
+        if 'game_name' not in inter.options['global'].keys():
+            return ['[ERROR] Please select a game first']
         if inter.options['global']['game_name'] not in games.keys():
             return ['[ERROR] Invalid game provided']
         game_id = games[inter.options['global']['game_name']]
@@ -116,6 +132,8 @@ async def services_urlfilters_all(inter: disnake.ApplicationCommandInteraction, 
 async def services_urlfilters_channel(inter: disnake.ApplicationCommandInteraction, user_input: str):
     try:
         games = await API.fetch_available_games()
+        if 'game_name' not in inter.options['channel'].keys():
+            return ['[ERROR] Please select a game first']
         if inter.options['channel']['game_name'] not in games.keys():
             return ['[ERROR] Invalid game provided']
         game_id = games[inter.options['channel']['game_name']]
@@ -129,6 +147,8 @@ async def services_urlfilters_channel(inter: disnake.ApplicationCommandInteracti
 async def services_urlfilters_clear(inter: disnake.ApplicationCommandInteraction, user_input: str):
     try:
         games = await API.fetch_available_games()
+        if 'game_name' not in inter.options['clear'].keys():
+            return ['[ERROR] Please select a game first']
         if inter.options['clear']['game_name'] not in games.keys():
             return ['[ERROR] Invalid game provided']
         game_id = games[inter.options['clear']['game_name']]
@@ -141,6 +161,8 @@ async def services_urlfilters_clear(inter: disnake.ApplicationCommandInteraction
 
 async def service_ignored(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await ORM.get_followed_games(inter.guild_id)
+    if 'game_name' not in inter.options['remove']['service'].keys():
+        return ['[ERROR] Please select a game first']
     if inter.options['remove']['service']['game_name'] not in games.keys():
         return ['[ERROR] Invalid game provided']
     game_id = games[inter.options['remove']['service']['game_name']]
@@ -151,6 +173,8 @@ async def service_ignored(inter: disnake.ApplicationCommandInteraction, user_inp
 
 async def service_allowed(inter: disnake.ApplicationCommandInteraction, user_input: str):
     games = await ORM.get_followed_games(inter.guild_id)
+    if 'game_name' not in inter.options['remove']['service'].keys():
+        return ['[ERROR] Please select a game first']
     if inter.options['remove']['service']['game_name'] not in games.keys():
         return ['[ERROR] Invalid game provided']
     game_id = games[inter.options['remove']['service']['game_name']]

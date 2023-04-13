@@ -54,14 +54,17 @@ class Guilds(commands.Cog):
 
 
         # We can see the owner only if we have the Members privileged intent
-        if not guild.owner:
+        if not guild.owner_id:
             return
 
         msg = "I'm now ready to track GameDevs for you !\n"
         msg += self.help_message
 
         try:
-            await guild.owner.send(msg)
+            owner = await self.bot.fetch_user(guild.owner_id)
+            if not owner.dm_channel:
+                await owner.create_dm()
+            await owner.dm_channel.send(msg, components=[self.server_btn])
         except disnake.Forbidden:
             logger.warning(f'{guild.owner.name} has blocked his DMs.')
 

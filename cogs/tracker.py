@@ -262,13 +262,18 @@ class Tracker(commands.Cog):
 
             except disnake.Forbidden:
                 logger.warning(f"Missing permissions for #{channel.name}")
-                if not channel.guild.owner:
+                if not channel.guild.owner_id:
                     continue
                 try:
-                    await channel.guild.owner.send(f"I don't have the permission to send the latest post for {msg['game_id']} in {channel.name}")
-                    logger.info(f'{channel.guild.name}[{channel.guild.id}]: Owner "{channel.guild.owner}" has been warned. ')
+                    owner = await self.bot.fetch_user(channel.guild.owner_id)
+                    if not owner.dm_channel:
+                        await owner.create_dm()
+                    error_msg = f"Sending the latest post for {msg['game_id']} in {channel.mention} failed because I'm not allowed to send messages in this channel."
+                    error_msg += f"\nPlease give me the `Send Messages` permission for this channel or set another channel with `/dt-set-channel`."
+                    await owner.dm_channel.send(error_msg)
+                    logger.info(f'{channel.guild.name}[{channel.guild.id}]: Owner has been warned. ')
                 except disnake.Forbidden:
-                    logger.warning(f'{channel.guild.name}[{channel.guild.id}]: Owner "{channel.guild.owner}" cannot be contacted (Forbidden) ')
+                    logger.warning(f'{channel.guild.name}[{channel.guild.id}]: Owner cannot be contacted via DM (Forbidden) ')
 
             except disnake.HTTPException as e:
                 logger.error(f"HTTPException: {e.code} | {e.status} | {e.text}")

@@ -282,8 +282,9 @@ class Tracker(commands.Cog):
 
     @resfresh_posts.before_loop
     async def before_refresh(self):
-        logger.info('Waiting before launching refresh tasks...')
+        logger.info('Waiting before launching refresh task...')
         await self.bot.wait_until_ready()
+        logger.info(f'Bot ready, launching refresh task. (Loop every {self.resfresh_posts.seconds} seconds)')
 
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS

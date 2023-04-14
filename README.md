@@ -195,7 +195,7 @@ You can use the `/dt-urlfilters global` command to add `forum/1` filter for `Sta
 
 This will open a modal with your current filters.
 
-![URL Filters modal](https://i.imgur.com/7DM5hIR.png)
+![URL Filters modal](https://i.imgur.com/roj67fp.png)
 
 You can then add the `forum/1` filter then click the **Submit** button to apply changes.
 

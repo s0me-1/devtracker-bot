@@ -337,6 +337,7 @@ class Tracker(commands.Cog):
                     msg = f"It seems I don't have the permission to post in <#{channel_id}>. "
                     msg += f"Please note that it means you won't receive any post for `{game_name}` until you resolve this issue."
                     emb.description = msg
+                    logger.warning(f'{inter.guild.name} [{inter.guild_id}] : Missing permissions for #{channel_id}, error embed sent instead.')
                     await inter.edit_original_message(embed=emb)
             else:
                 msg += " Please use `/dt-set-channel` to receive the latest posts."
@@ -434,6 +435,7 @@ class Tracker(commands.Cog):
             except disnake.Forbidden:
                 emb_err.title = "❌ Permission Error"
                 emb_err.description = f"I don't have the permission to send the latest post for {game_name} in <#{channel.id}>"
+                logger.warning(f'{inter.guild.name} [{inter.guild_id}] : Missing permissions for #{channel.id}, error embed sent instead.')
                 await inter.edit_original_message(embed=emb_err)
 
     @commands.slash_command(name="dt-ignorelist", description="Ignore posts from a specific account.")

@@ -50,7 +50,7 @@ if sentry_dsn:
 
 class DevTracker(commands.InteractionBot):
 
-    __version__ = "1.7.4"
+    __version__ = "1.7.7"
 
     def __init__(self):
 

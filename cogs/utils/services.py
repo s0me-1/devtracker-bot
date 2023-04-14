@@ -64,8 +64,12 @@ CUSTOMIZERS = {
         'color': 0
     },
     'kleiForum': {
-            'icon_url': 'https://shop.klei.com/wp-content/uploads/2017/05/cropped-cropped-logo_klei_512x512.png',
-            'color': 10070709
+        'icon_url': 'https://shop.klei.com/wp-content/uploads/2017/05/cropped-cropped-logo_klei_512x512.png',
+        'color': 10070709
+    },
+    'OfficialForums': {
+        'icon_url': 'https://i.servimg.com/u/f33/11/20/17/41/last_e10.png',
+        'color': 14454015
     },
 
     'default': {

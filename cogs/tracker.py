@@ -1426,7 +1426,8 @@ class Tracker(commands.Cog):
 
         # Send everything but adapt channel accordingly
         elif len(url_filters) > 0:
-            for channel_id, thread_id, filters in url_filters:
+            sorted_url_filters = sorted(url_filters, key=lambda f: len(f[2]), reverse=True)
+            for channel_id, thread_id, filters in sorted_url_filters:
                 filters_list = filters.split(',')
                 filters_list_sanitized = [f for f in filters_list if f]
                 if channel_id and any(f.strip() in em_url for f in filters_list_sanitized):

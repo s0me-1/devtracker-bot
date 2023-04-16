@@ -1,18 +1,16 @@
-from collections import defaultdict
-from email.policy import default
 import disnake
 import logging
-
-logger = logging.getLogger('bot.utils.AutoCompleters')
 
 # Call are done for every user input made, but
 # API requests should be cached so it should not be an issue
 from cogs.utils import api
-API = api.API()
-
 from cogs.utils import database as db
+
+
+API = api.API()
 ORM = db.ORM()
 
+logger = logging.getLogger('bot.utils.AutoCompleters')
 
 # Discord supports 25 choices max,
 # so auto-completers can't return more than 25 elements
@@ -137,6 +135,21 @@ async def services_urlfilters_channel(inter: disnake.ApplicationCommandInteracti
         if inter.options['channel']['game_name'] not in games.keys():
             return ['[ERROR] Invalid game provided']
         game_id = games[inter.options['channel']['game_name']]
+        service_ids = await API.fetch_services(game_id)
+        max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
+        return max_list[0:24]
+    except Exception as e:
+        logger.error(e)
+        return ['[ERROR] API request failed. Retry later.']
+
+async def services_urlfilters_thread(inter: disnake.ApplicationCommandInteraction, user_input: str):
+    try:
+        games = await API.fetch_available_games()
+        if 'game_name' not in inter.options['thread'].keys():
+            return ['[ERROR] Please select a game first']
+        if inter.options['thread']['game_name'] not in games.keys():
+            return ['[ERROR] Invalid game provided']
+        game_id = games[inter.options['thread']['game_name']]
         service_ids = await API.fetch_services(game_id)
         max_list = [serv_id for serv_id in service_ids if not user_input or user_input.lower() in serv_id.lower()]
         return max_list[0:24]

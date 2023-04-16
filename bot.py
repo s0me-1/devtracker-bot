@@ -54,7 +54,6 @@ class DevTracker(commands.InteractionBot):
 
     def __init__(self):
 
-
         intents = disnake.Intents(guilds=True, messages=True)
         activity = disnake.Activity(name="GameDevs 🎮", type=disnake.ActivityType.watching)
 
@@ -68,6 +67,7 @@ class DevTracker(commands.InteractionBot):
         self.load_extension("cogs.settings")
         self.load_extension("cogs.admin")
         self.load_extension("cogs.tracker")
+
 
 DT = DevTracker()
 

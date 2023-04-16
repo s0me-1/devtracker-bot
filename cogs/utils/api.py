@@ -3,7 +3,7 @@ import time
 import aiohttp
 
 import sec
-from aiohttp import ClientSession, ClientConnectorError, ClientTimeout, ContentTypeError
+from aiohttp import ClientSession, ClientConnectorError, ClientTimeout
 import asyncio
 
 
@@ -19,7 +19,7 @@ class API:
             'Authorization': f'Bearer {self.token}',
             'Cache-Control': 'no-cache'
         }
-        self.api_baseurl =  sec.load('api_base')
+        self.api_baseurl = sec.load('api_base')
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
@@ -77,7 +77,7 @@ class API:
                     return {game_id: posts}
 
             except asyncio.TimeoutError as e:
-                logger.warning(f'GET {url} | Timeout ({session.timeout})')
+                logger.warning(f'GET {url} | Timeout ({session.timeout}) - {e}')
                 return {game_id: 'timeout'}
 
             except aiohttp.ContentTypeError as e:
@@ -93,10 +93,10 @@ class API:
     async def fetch_all_posts(self, game_ids):
 
         timeout = ClientTimeout(total=2)
-        async with ClientSession(headers=self.headers, timeout=timeout) as session:
+        async with ClientSession(headers=self.headers, timeout=timeout):
             try:
                 res = await asyncio.gather(
-                *[
+                    *[
                         self.fetch_posts(gid)
                         for gid in game_ids
                     ],
@@ -105,10 +105,10 @@ class API:
                 return res
 
             except asyncio.TimeoutError as e:
-                logger.error(f'TIMEOUT: The Fetchs posts process took more than {timeout.total} seconds.')
+                logger.error(f'TIMEOUT: The Fetchs posts process took more than {timeout.total} seconds. {e}')
                 return None
 
-    async def fetch_post(self, post_id ,game_id):
+    async def fetch_post(self, post_id, game_id):
         url = f'{self.api_baseurl}/{game_id}/posts'
 
         async with ClientSession(headers=self.headers) as session:
@@ -151,10 +151,10 @@ class API:
     async def fetch_all_accounts(self, game_ids):
 
         timeout = ClientTimeout(total=5)
-        async with ClientSession(headers=self.headers, timeout=timeout) as session:
+        async with ClientSession(headers=self.headers, timeout=timeout):
             try:
                 res = await asyncio.gather(
-                *[
+                    *[
                         self.fetch_accounts(gid)
                         for gid in game_ids
                     ],
@@ -163,7 +163,7 @@ class API:
                 return res
 
             except asyncio.TimeoutError as e:
-                logger.error(f'TIMEOUT: The Fetchs accounts process took more than {timeout.total} seconds.')
+                logger.error(f'TIMEOUT: The Fetchs accounts process took more than {timeout.total} seconds. - {e}')
                 return None
 
     async def fetch_services(self, game_id):

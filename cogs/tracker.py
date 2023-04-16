@@ -2,7 +2,6 @@ import asyncio
 from collections import defaultdict
 import logging
 import re
-from datetime import datetime
 
 from bs4 import BeautifulSoup, NavigableString
 import disnake
@@ -53,7 +52,6 @@ class URLFiltersModal(disnake.ui.Modal):
                 inline=False,
             )
         await inter.response.send_message(embed=embed)
-
 
 
 class Tracker(commands.Cog):
@@ -141,13 +139,12 @@ class Tracker(commands.Cog):
 
                 for post in new_posts:
                     if gid not in fw_game_ids:
-                        logger.info(f"Ignoring {gid} because it isnt followed by anyone.")
+                        # logger.info(f"Ignoring {gid} because it isnt followed by anyone.")
                         continue
 
                     logger.info(f"Processing: [{gid}] {post['account']['identifier']} | {post['topic']} [{post['id']}] ")
                     em = self._generate_embed(post)
                     embeds_per_gid[gid].append((em, post['account']['identifier'], post['account']['service']))
-
 
         message_queue = []
         for last_post_id, channel_id, guild_id, game_id in ordered_fws:
@@ -176,10 +173,10 @@ class Tracker(commands.Cog):
                     msg += "Please set a channel with `/dt-set-channel` to receives the latests posts."
                     await guild.owner.send(msg)
                 except disnake.Forbidden:
-                        logger.warning(f'{guild.owner.name} has blocked his DMs.')
+                    logger.warning(f'{guild.owner.name} has blocked his DMs.')
                 continue
 
-            if not game_id in embeds_per_gid.keys():
+            if game_id not in embeds_per_gid.keys():
                 logger.debug(f'No new posts for {game_id}.')
                 continue
 
@@ -192,7 +189,6 @@ class Tracker(commands.Cog):
             messages = []
             embeds = []
             embeds_size = 0
-
 
             for em, account_id, service_id in embeds_per_gid[game_id]:
 
@@ -210,6 +206,9 @@ class Tracker(commands.Cog):
 
                     # Means we have to override the current channel
                     elif isinstance(filter_result, disnake.TextChannel):
+                        channel = filter_result
+
+                    elif isinstance(filter_result, disnake.Thread):
                         channel = filter_result
 
                 embeds.append(em)
@@ -249,36 +248,35 @@ class Tracker(commands.Cog):
             )
         logger.debug('Refresh task completed.')
 
-    async def _send_embeds(self, channel: disnake.TextChannel, messages, last_post_id):
+    async def _send_embeds(self, channel_or_thread, messages, last_post_id):
         for msg in messages:
-            if channel:
-                logger.info(f"{channel.guild.name} [{channel.guild.id}]: Sending {len(msg['embeds'])} embeds to {channel.name}.")
+            if channel_or_thread:
+                logger.info(f"{channel_or_thread.guild.name} [{channel_or_thread.guild.id}]: Sending {len(msg['embeds'])} embeds to {channel_or_thread.name}.")
             else:
                 logger.error("Tried to send embeds to a channel that does not exist !")
                 continue
             try:
-                await channel.send(embeds=msg['embeds'])
-                await ORM.set_last_post(last_post_id, channel.guild.id, msg['game_id'])
+                await channel_or_thread.send(embeds=msg['embeds'])
+                await ORM.set_last_post(last_post_id, channel_or_thread.guild.id, msg['game_id'])
 
             except disnake.Forbidden:
-                logger.warning(f"Missing permissions for #{channel.name}")
-                if not channel.guild.owner_id:
+                logger.warning(f"Missing permissions for #{channel_or_thread.name}")
+                if not channel_or_thread.guild.owner_id:
                     continue
                 try:
-                    owner = await self.bot.fetch_user(channel.guild.owner_id)
+                    owner = await self.bot.fetch_user(channel_or_thread.guild.owner_id)
                     if not owner.dm_channel:
                         await owner.create_dm()
-                    error_msg = f"Sending the latest post for {msg['game_id']} in {channel.mention} failed because I'm not allowed to send messages in this channel."
-                    error_msg += f"\nPlease give me the `Send Messages` permission for this channel or set another channel with `/dt-set-channel`."
+                    error_msg = f"Sending the latest post for {msg['game_id']} in {channel_or_thread.mention} failed because I'm not allowed to send messages in this channel."
+                    error_msg += "\nPlease give me the `Send Messages` permission for this channel or set another channel with `/dt-set-channel`."
                     await owner.dm_channel.send(error_msg)
-                    logger.info(f'{channel.guild.name}[{channel.guild.id}]: Owner has been warned. ')
+                    logger.info(f'{channel_or_thread.guild.name}[{channel_or_thread.guild.id}]: Owner has been warned. ')
                 except disnake.Forbidden:
-                    logger.warning(f'{channel.guild.name}[{channel.guild.id}]: Owner cannot be contacted via DM (Forbidden) ')
+                    logger.warning(f'{channel_or_thread.guild.name}[{channel_or_thread.guild.id}]: Owner cannot be contacted via DM (Forbidden) ')
 
             except disnake.HTTPException as e:
                 logger.error(f"HTTPException: {e.code} | {e.status} | {e.text}")
                 continue
-
 
     @resfresh_posts.before_loop
     async def before_refresh(self):
@@ -294,7 +292,7 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-follow", description="Add a game to follow.")
     @commands.default_member_permissions(manage_guild=True)
-    async def follow_game(self, inter : disnake.AppCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games)):
+    async def follow_game(self, inter: disnake.AppCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games)):
 
         await inter.response.defer()
 
@@ -343,7 +341,6 @@ class Tracker(commands.Cog):
                 msg += " Please use `/dt-set-channel` to receive the latest posts."
                 emb_success.description = msg
                 await inter.edit_original_message(embed=emb_success)
-
 
     @commands.slash_command(name="dt-set-channel")
     @commands.default_member_permissions(manage_guild=True)
@@ -448,12 +445,10 @@ class Tracker(commands.Cog):
         pass
 
     @ignorelist_add.sub_command(name="account", description="Ignore posts from a specific account.")
-    async def ignorelist_add_account(
-        self,
-        inter: disnake.ApplicationCommandInteraction,
-        game_name: str = commands.Param(autocomplete=ac.games_fw),
-        service_id: str = commands.Param(autocomplete=ac.accounts_service_all),
-        account_id: str = commands.Param(autocomplete=ac.accounts_all)):
+    async def ignorelist_add_account(self, inter: disnake.ApplicationCommandInteraction,
+                                     game_name: str = commands.Param(autocomplete=ac.games_fw),
+                                     service_id: str = commands.Param(autocomplete=ac.accounts_service_all),
+                                     account_id: str = commands.Param(autocomplete=ac.accounts_all)):
 
         await inter.response.defer()
         emb_err = disnake.Embed(colour=14242639)
@@ -592,7 +587,6 @@ class Tracker(commands.Cog):
                 emb_success.description = f'Posts from `{service_id}` will no longer be ignored for {game_id}.'
                 await inter.edit_original_message(embed=emb_success)
 
-
     @commands.slash_command(name="dt-allowlist", description="Accept posts only from specific accounts.")
     @commands.default_member_permissions(manage_guild=True)
     async def allowlist(self, inter: disnake.ApplicationCommandInteraction):
@@ -603,12 +597,10 @@ class Tracker(commands.Cog):
         pass
 
     @allowlist_add.sub_command(name="account", description="Allow only posts from specific accounts.")
-    async def allowlist_add_account(
-        self,
-        inter: disnake.ApplicationCommandInteraction,
-        game_name: str = commands.Param(autocomplete=ac.games_fw),
-        service_id: str = commands.Param(autocomplete=ac.accounts_service_all),
-        account_id: str = commands.Param(autocomplete=ac.accounts_all)):
+    async def allowlist_add_account(self, inter: disnake.ApplicationCommandInteraction,
+                                    game_name: str = commands.Param(autocomplete=ac.games_fw),
+                                    service_id: str = commands.Param(autocomplete=ac.accounts_service_all),
+                                    account_id: str = commands.Param(autocomplete=ac.accounts_all)):
 
         await inter.response.defer()
 
@@ -751,10 +743,52 @@ class Tracker(commands.Cog):
     async def manage_urlfilters(self, inter: disnake.ApplicationCommandInteraction):
         pass
 
+    async def _urlfilters_send_modal(self, inter, game_name, service_id, current_filters, channel_or_thread):
+
+        title = f"{game_name} [{service_id}] - {channel_or_thread.name}"
+        title_shortened = title[:40] + "..." if len(title) > 44 else title
+        warning_msg = f"Make sure DevTracker is allowed to send messages in #{channel_or_thread.name}, otherwise you won't receive any post."
+
+        await inter.response.send_modal(
+            title=title_shortened,
+            custom_id=f"url_filters_modal-{inter.id}",
+            components=[
+                disnake.ui.TextInput(
+                    label="Warning !",
+                    custom_id="url_filters_warning",
+                    value=warning_msg,
+                    max_length=300,
+                    style=disnake.TextInputStyle.paragraph,
+                ),
+                disnake.ui.TextInput(
+                    label="URL Filters - Separated by commas (,)",
+                    custom_id="url_filters_input",
+                    value=current_filters,
+                    placeholder="forum/1,forum/4",
+                    max_length=1000,
+                    style=disnake.TextInputStyle.paragraph,
+                )
+            ]
+        )
+        try:
+            modal_inter: disnake.ModalInteraction = await self.bot.wait_for(
+                "modal_submit",
+                check=lambda i: i.custom_id == f"url_filters_modal-{inter.id}" and i.author.id == inter.author.id,
+                timeout=300,
+            )
+        except asyncio.TimeoutError:
+            # user didn't submit the modal, so a timeout error is raised
+            emb_err = disnake.Embed(colour=14242639)
+            emb_err.title = "❌ Timeout Error"
+            emb_err.description = "Modal submission was not received quickly enough."
+            await inter.send(embed=emb_err, ephemeral=True)
+            return
+        return modal_inter
+
     @manage_urlfilters.sub_command(name="global", description="Receive only posts with specific keywords in their origin URLs.")
     async def edit_urlfilters_global(self, inter: disnake.ApplicationCommandInteraction,
-        game_name: str = commands.Param(autocomplete=ac.games_fw),
-        service_id: str = commands.Param(autocomplete=ac.services_urlfilters_all)):
+                                     game_name: str = commands.Param(autocomplete=ac.games_fw),
+                                     service_id: str = commands.Param(autocomplete=ac.services_urlfilters_all)):
 
         games = await API.fetch_available_games()
         game_id = None
@@ -817,10 +851,10 @@ class Tracker(commands.Cog):
         await modal_inter.response.defer()
         emb_success = disnake.Embed(title="✅  Success", colour=6076508)
         emb_success.description = f"Global URL filters for {game_name} [{service_id}] have been updated.\n" \
-                                    "Only posts with URLs containing the specified keywords will be sent." \
-                                    "\n\n **Note:**" \
-                                    "\n- If you want to clear all current filters, use `dt-clear` instead." \
-                                    "\n- You can see all your courrent filters with `dt-config`."
+            "Only posts with URLs containing the specified keywords will be sent." \
+            "\n\n **Note:**" \
+            "\n- If you want to clear all current filters, use `dt-clear` instead." \
+            "\n- You can see all your courrent filters with `dt-config`."
         emb_success.add_field(name="Filters", value=modal_inter.text_values["url_filters_input"])
 
         new_filters = modal_inter.text_values["url_filters_input"]
@@ -850,62 +884,68 @@ class Tracker(commands.Cog):
             return
         else:
             game_id = games[game_name]
-            current_channel_filters = await ORM.get_urlfilters_channel(inter.guild_id, game_id, service_id, channel.id)
+            current_channel_filters = await ORM.get_urlfilters_channel(inter.guild_id, game_id, service_id, channel_id=channel.id)
 
-
-        title = f"{game_name} [{service_id}] - {channel.name}"
-        title_shortened = title[:40] + "..." if len(title) > 44 else title
-        warning_msg = f"Make sure DevTracker is allowed to send messages in #{channel.name}, otherwise you won't receive any post."
-
-        await inter.response.send_modal(
-            title=title_shortened,
-            custom_id=f"url_filters_modal-{inter.id}",
-            components=[
-                disnake.ui.TextInput(
-                    label="Warning !",
-                    custom_id="url_filters_warning",
-                    value=warning_msg,
-                    max_length=300,
-                    style=disnake.TextInputStyle.paragraph,
-                ),
-                disnake.ui.TextInput(
-                    label="URL Filters - Separated by commas (,)",
-                    custom_id="url_filters_input",
-                    value=current_channel_filters,
-                    placeholder="forum/1,forum/4",
-                    max_length=1000,
-                    style=disnake.TextInputStyle.paragraph,
-                )
-            ]
-        )
-        try:
-            modal_inter: disnake.ModalInteraction = await self.bot.wait_for(
-                "modal_submit",
-                check=lambda i: i.custom_id == f"url_filters_modal-{inter.id}" and i.author.id == inter.author.id,
-                timeout=300,
-            )
-        except asyncio.TimeoutError:
-            # user didn't submit the modal, so a timeout error is raised
-            emb_err = disnake.Embed(colour=14242639)
-            emb_err.title = "❌ Timeout Error"
-            emb_err.description = "Modal submission was not received quickly enough."
-            await inter.send(embed=emb_err, ephemeral=True)
-            return
+        modal_inter = await self._urlfilters_send_modal(inter, game_name, service_id, current_channel_filters, channel)
 
         await modal_inter.response.defer()
         emb_success = disnake.Embed(title="✅  Success", colour=6076508)
         emb_success.description = f"URL filters for **{game_name}** [`{service_id}`] have been updated.\n" \
-                                  f"Posts with URLs containing the specified keywords will be sent to <#{channel.id}>." \
-                                    "\n\n **Note:**" \
-                                    "\n- If you want to clear all current filters, use `dt-clear` instead." \
-                                    "\n- You can see all your courrent filters with `dt-config`."
+            f"Posts with URLs containing the specified keywords will be sent to <#{channel.id}>." \
+            "\n\n **Note:**" \
+            "\n- If you want to clear all current filters, use `dt-clear` instead." \
+            "\n- You can see all your courrent filters with `dt-config`."
 
         emb_success.add_field(name="Filters", value=modal_inter.text_values["url_filters_input"])
 
         new_filters = modal_inter.text_values["url_filters_input"]
         if new_filters:
-            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{new_filters}" added as URL filters for {game_name} [{service_id}]')
-            await ORM.update_urlfilters_channel(inter.guild_id, game_id, service_id, new_filters, channel.id)
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{new_filters}" added as URL filters for {game_name} [{service_id}] - Redirect to  channel {channel.name}')
+            await ORM.update_urlfilters_channel(inter.guild_id, game_id, service_id, new_filters, channel_id=channel.id),
+            await modal_inter.edit_original_message(embed=emb_success)
+        else:
+            emb_neutral = disnake.Embed(description=" ❌ No filters were provided. No changes were made.")
+            await modal_inter.edit_original_message(embed=emb_neutral)
+
+    @manage_urlfilters.sub_command(name="thread", description="Dispatch posts with specific keywords in their origin URLs to a specific thread.")
+    async def edit_urlfilters_thread(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        thread: disnake.Thread,
+        game_name: str = commands.Param(autocomplete=ac.games_fw),
+        service_id: str = commands.Param(autocomplete=ac.services_urlfilters_thread),
+    ):
+
+        games = await API.fetch_available_games()
+        current_channel_filters = None
+
+        emb_err = disnake.Embed(colour=14242639)
+
+        if game_name not in games.keys():
+            emb_err.title = "❌ Game Error"
+            emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
+            await inter.send(embed=emb_err)
+            return
+        else:
+            game_id = games[game_name]
+            current_channel_filters = await ORM.get_urlfilters_channel(inter.guild_id, game_id, service_id, thread_id=thread.id)
+
+        modal_inter = await self._urlfilters_send_modal(inter, game_name, service_id, current_channel_filters, thread)
+
+        await modal_inter.response.defer()
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+        emb_success.description = f"URL filters for **{game_name}** [`{service_id}`] have been updated.\n" \
+            f"Posts with URLs containing the specified keywords will be sent to <#{thread.id}>." \
+            "\n\n **Note:**" \
+            "\n- If you want to clear all current filters, use `dt-clear` instead." \
+            "\n- You can see all your courrent filters with `dt-config`."
+
+        emb_success.add_field(name="Filters", value=modal_inter.text_values["url_filters_input"])
+
+        new_filters = modal_inter.text_values["url_filters_input"]
+        if new_filters:
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : "{new_filters}" added as URL filters for {game_name} [{service_id}] - Redirect to Thread {thread.name}')
+            await ORM.update_urlfilters_channel(inter.guild_id, game_id, service_id, new_filters, thread_id=thread.id),
             await modal_inter.edit_original_message(embed=emb_success)
         else:
             emb_neutral = disnake.Embed(description=" ❌ No filters were provided. No changes were made.")
@@ -940,7 +980,6 @@ class Tracker(commands.Cog):
         emb_err.description = f"`{game_name}` is either an invalid game or unsupported."
         await inter.edit_original_message(embed=emb_err)
 
-
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS
     # ---------------------------------------------------------------------------------
@@ -949,7 +988,7 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-unfollow", description="Remove a game to the following list")
     @commands.default_member_permissions(manage_guild=True)
-    async def unfollow_game(self, inter : disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games_fw)):
+    async def unfollow_game(self, inter: disnake.ApplicationCommandInteraction, game: str = commands.Param(autocomplete=ac.games_fw)):
 
         await inter.response.defer()
 
@@ -1011,14 +1050,13 @@ class Tracker(commands.Cog):
     # Debug      /
     # ---------/
 
-    @commands.slash_command(name="dt-force-send-post", description="[TECHNICAL] Debug bad formatted messages.", guild_ids=[687999396612407341])
+    @commands.slash_command(name="dt-force-send-post", description="[TECHNICAL] Debug bad formatted messages.", guild_ids=[687999396612407341, 1091641191176605796])
     @commands.default_member_permissions(manage_guild=True)
-    async def force_fetch_last_post(self, inter : disnake.ApplicationCommandInteraction, post_id: str, game_name: str = commands.Param(autocomplete=ac.games)):
+    async def force_fetch_last_post(self, inter: disnake.ApplicationCommandInteraction, post_id: str, game_name: str = commands.Param(autocomplete=ac.games)):
 
         await inter.response.defer()
 
         emb_error = disnake.Embed(title="❌  Error", colour=14242639)
-        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
 
         logger.info(f'Forcing fetch of {post_id}.')
         games = await API.fetch_available_games()
@@ -1030,7 +1068,7 @@ class Tracker(commands.Cog):
             post = await API.fetch_post(post_id, game_id)
 
             if not post:
-                await inter.edit_original_message(f"I cannot fetch that post anymore.")
+                await inter.edit_original_message("I cannot fetch that post anymore.")
                 return
 
             soup = BeautifulSoup(post[0]['content'], "html.parser")
@@ -1070,7 +1108,7 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-save-post-ids", description="Update posts state of the Bot.", guild_ids=[984016998084247582, 687999396612407341])
     @commands.default_member_permissions(manage_guild=True)
-    async def set_current_post_ids(self, inter : disnake.ApplicationCommandInteraction):
+    async def set_current_post_ids(self, inter: disnake.ApplicationCommandInteraction):
 
         await inter.response.defer()
         posts_per_game = await self._fetch_posts()
@@ -1096,7 +1134,7 @@ class Tracker(commands.Cog):
 
     @commands.slash_command(name="dt-get-post-ids", description="Show the bot state.", guild_ids=[984016998084247582, 687999396612407341])
     @commands.default_member_permissions(manage_guild=True)
-    async def get_saved_post_ids(self, inter : disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games)):
+    async def get_saved_post_ids(self, inter: disnake.ApplicationCommandInteraction, game_name: str = commands.Param(autocomplete=ac.games)):
 
         await inter.response.defer()
         games = await API.fetch_available_games()
@@ -1167,7 +1205,7 @@ class Tracker(commands.Cog):
         logger.info(f'{nb_posts} posts retrieved ({err_msg}).')
         return posts
 
-    def _find_img(self, soup : BeautifulSoup):
+    def _find_img(self, soup: BeautifulSoup):
         imgs = soup.find_all('img')
 
         if not imgs:
@@ -1182,9 +1220,8 @@ class Tracker(commands.Cog):
                 continue
             else:
                 # Force HTTPS url scheme
-                return re.sub(r"^\/\/",'https://', img['src'])
+                return re.sub(r"^\/\/", 'https://', img['src'])
         return None
-
 
     def _sanitize_post_content(self, post_content, origin=None):
 
@@ -1380,8 +1417,8 @@ class Tracker(commands.Cog):
     def _apply_urlfilters(self, guild, url_filters, em_url):
 
         # Only send message if filters are matched if no channel_id
-        if len(url_filters) == 1 and not url_filters[0][0]:
-            filters_list = url_filters[0][1].split(',')
+        if len(url_filters) == 1 and not url_filters[0][0] and not url_filters[0][1]:
+            filters_list = url_filters[0][2].split(',')
             filters_list_sanitized = [f for f in filters_list if f]
             if not any(f.strip() in em_url for f in filters_list_sanitized):
                 logger.info(f"[{guild.id}] Post Skipped. ({em_url} didn't match {filters_list} [Single Filter Mode]).")
@@ -1389,14 +1426,17 @@ class Tracker(commands.Cog):
 
         # Send everything but adapt channel accordingly
         elif len(url_filters) > 0:
-            for channel_id, filters in url_filters:
+            for channel_id, thread_id, filters in url_filters:
                 filters_list = filters.split(',')
                 filters_list_sanitized = [f for f in filters_list if f]
                 if channel_id and any(f.strip() in em_url for f in filters_list_sanitized):
                     new_channel = guild.get_channel(channel_id)
                     logger.info(f"[{guild.id}] Overriding channel by #{new_channel.name}: {em_url} matched {filters} [Multi Filter Mode]).")
                     return new_channel
-
+                elif thread_id and any(f.strip() in em_url for f in filters_list_sanitized):
+                    new_thread = guild.get_thread(thread_id)
+                    logger.info(f"[{guild.id}] Overriding channel by #{new_thread.name}: {em_url} matched {filters} [Multi Filter Mode]).")
+                    return new_thread
         return False
 
 

@@ -1,11 +1,7 @@
-from collections import defaultdict
-from itertools import zip_longest
 import logging
 
 import disnake
 from disnake.ext import commands
-
-from cogs.utils import autocompleters as ac
 
 from cogs.utils import database as db
 from cogs.utils import api
@@ -25,7 +21,7 @@ class Settings(commands.Cog):
     # APPLICATION COMMANDS
     # ---------------------------------------------------------------------------------
     @commands.slash_command(name="dt-help", description="Getting started.")
-    async def help(self, inter : disnake.ApplicationCommandInteraction):
+    async def help(self, inter: disnake.ApplicationCommandInteraction):
         await inter.response.defer()
 
         embeds = []
@@ -77,7 +73,7 @@ class Settings(commands.Cog):
 
     @commands.slash_command(name="dt-config", description="See the current configuration of this server.")
     @commands.default_member_permissions(manage_guild=True)
-    async def get_current_config(self, inter : disnake.ApplicationCommandInteraction):
+    async def get_current_config(self, inter: disnake.ApplicationCommandInteraction):
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : Status request')
 
         await inter.response.defer()
@@ -97,7 +93,7 @@ class Settings(commands.Cog):
                 emb_err.description = f"Missing `Send Message` Channel Permission for default channel <#{default_channel_id}> "
             chname = f'<#{default_channel_id}>'
 
-        api_md = "[DeveloperTracker.com](https://developertracker.com/)\n" +  u'\u200B'
+        api_md = "[DeveloperTracker.com](https://developertracker.com/)\n" + u'\u200B'
         fw_status = await ORM.get_follow_status(inter.guild_id)
 
         ignored_accounts = await ORM.get_ignored_accounts_per_game(inter.guild_id)
@@ -138,7 +134,7 @@ class Settings(commands.Cog):
 
         description = "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n" \
             " - DevTracker Official [Discord Server](https://discord.gg/QN9uveFYXX).\n" \
-            " - DevTracker [Github](https://github.com/s0me-1/devtracker-bot#commands) page.\n" +  u'\u200B'
+            " - DevTracker [Github](https://github.com/s0me-1/devtracker-bot#commands) page.\n" + u'\u200B'
 
         emb = disnake.Embed(
             description=description,
@@ -176,7 +172,7 @@ class Settings(commands.Cog):
 
         if filter_mode == "allowlist_and_ignorelist":
             emb = disnake.Embed(
-                color=15773006 # BS4 Warning Color
+                color=15773006  # BS4 Warning Color
             )
             emb.title = "⚠️ Warning !"
             emb.description = """
@@ -249,14 +245,14 @@ class Settings(commands.Cog):
         fw_tabs = []
         fw_tab = ''
 
-        max_fw = max(fw_status,key=lambda fw: len(fw[1]))
+        max_fw = max(fw_status, key=lambda fw: len(fw[1]))
         lg = len(max_fw[1])
         for gid, gname, game_ch_id, last_post_id in fw_status:
 
             fw_line = ''
             offset = lg - len(gname)
             fw_line += f"`{gname}"
-            fw_line += " "*offset
+            fw_line += " " * offset
             if game_ch_id:
 
                 error_msg = ''
@@ -274,8 +270,7 @@ class Settings(commands.Cog):
                 else:
                     fw_line += f"`  |  <#{game_ch_id}> - {error_msg}\n"
             else:
-                 fw_line += f"` |  \n"
-
+                fw_line += "` |  \n"
 
             # Max Field size is 1024 characters
             if len(fw_line) + len(fw_tab) > 1024:
@@ -288,7 +283,6 @@ class Settings(commands.Cog):
 
         return fw_tabs
 
-
     def _generate_urlfilters_table(self, games, urlfilters_per_game, guild: disnake.Guild):
 
         if not urlfilters_per_game:
@@ -298,31 +292,47 @@ class Settings(commands.Cog):
         urlfilter_tab = ''
 
         for game_id, urlfilters in urlfilters_per_game.items():
-            max_service_size = max(urlfilters,key=lambda f: len(f[0]))
+            max_service_size = max(urlfilters, key=lambda f: len(f[0]))
             max_lg = len(max_service_size[0])
 
             urlfilter_tab += f"**{games[game_id]}**\n"
-            for service, channel_id, filter in urlfilters:
+            for service, channel_id, thread_id, filter in urlfilters:
 
                 filter_line = ""
                 offset = max_lg - len(service)
                 filter_line += f"`{service}"
-                filter_line += " "*offset
-                if channel_id:
+                filter_line += " " * offset
+                if channel_id or thread_id:
                     error_msg = ''
                     bot_member = guild.get_member(self.bot.user.id)
                     channel = guild.get_channel(channel_id)
-                    perms = channel.permissions_for(bot_member)
+                    thread = guild.get_thread(thread_id)
 
-                    if not perms.view_channel:
-                        error_msg = "**[ERROR]** Missing `View Channel` Permission"
-                    if not perms.send_messages:
-                        error_msg = "**[ERROR]** Missing `Send Message` Channel Permission"
+                    if channel_id and not channel:
+                        error_msg = "**[ERROR]** Channel not found or is not accessible."
+                    elif thread_id and not thread:
+                        error_msg = "**[ERROR]** Thread not found or is not accessible."
 
+                    perms = None
+                    if channel:
+                        perms = channel.permissions_for(bot_member)
+                    elif thread:
+                        try:
+                            perms = thread.permissions_for(bot_member)
+                        except disnake.ClientException:
+                            error_msg = "**[ERROR]** Thread parent channel not found or is not accessible."
+
+                    if perms:
+                        if not perms.view_channel:
+                            error_msg = "**[ERROR]** Missing `View Channel` Permission"
+                        if not perms.send_messages:
+                            error_msg = "**[ERROR]** Missing `Send Message` Channel Permission"
+
+                    thread_or_channel_id = thread_id if thread else channel_id
                     if not error_msg:
-                        filter_line += f"`  |  <#{channel_id}> - `{filter}`\n"
+                        filter_line += f"`  |  <#{thread_or_channel_id}> - `{filter}`\n"
                     else:
-                        filter_line += f"`  |  <#{channel_id}> - {error_msg}\n"
+                        filter_line += f"`  |  <#{thread_or_channel_id}> - {error_msg}\n"
 
                 else:
                     filter_line += f"`  | [Global] - `{filter}`\n"
@@ -338,7 +348,6 @@ class Settings(commands.Cog):
             urlfilter_tab = ''
 
         return urlfilters_tabs
-
 
     def _generate_ignored_table(self, games, ignored_data):
 

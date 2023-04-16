@@ -876,7 +876,6 @@ class ORM:
                 query = """
                     INSERT INTO url_filters ('follower_guild_id', 'game_id', 'service_id', 'filters', 'channel_id')
                     VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT (follower_guild_id, game_id, service_id, channel_id, thread_id) DO UPDATE SET filters = excluded.filters;
                     """
                 params = (guild_id, game_id, service_id, filters, channel_id)
                 await conn.execute(query, params)
@@ -890,7 +889,6 @@ class ORM:
                 query = """
                     INSERT INTO url_filters ('follower_guild_id', 'game_id', 'service_id', 'filters', 'thread_id')
                     VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT (follower_guild_id, game_id, service_id, channel_id, thread_id) DO UPDATE SET filters = excluded.filters;
                     """
                 params = (guild_id, game_id, service_id, filters, thread_id)
                 await conn.execute(query, params)

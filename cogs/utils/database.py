@@ -806,6 +806,21 @@ class ORM:
 
             return url_filters
 
+    async def get_urlfilters_thread(self, guild_id, game_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            conn.row_factory = aiosqlite.Row
+            await conn.set_trace_callback(logger.debug)
+
+            query = "SELECT thread_id,filters FROM url_filters WHERE follower_guild_id = ? AND game_id = ? AND thread_id IS NOT NULL;"
+            params = (guild_id, game_id)
+
+            url_filters = []
+            async with conn.execute(query, params) as cr:
+                async for row in cr:
+                    url_filters.append(tuple(row))
+
+            return url_filters
+
     async def get_urlfilters_channel(self, guild_id, game_id, service_id, channel_id=None, thread_id=None):
         async with aiosqlite.connect(DB_FILE) as conn:
             conn.row_factory = aiosqlite.Row

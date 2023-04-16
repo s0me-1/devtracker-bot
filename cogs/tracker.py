@@ -157,10 +157,13 @@ class Tracker(commands.Cog):
                 logger.warning(f'{guild_id} cant be found in the discord API !')
                 continue
 
+            thread_filters = await ORM.get_urlfilters_thread(guild_id, game_id)
             if channel_id:
                 channel = guild.get_channel(channel_id)
             elif default_channel_id:
                 channel = guild.get_channel(default_channel_id)
+            elif len(thread_filters) > 0:
+                logger.warning(f'{guild.name} [{guild.id}] follows {game_id} hasnt set any channel but have some thread filters')
             else:
                 logger.debug(f'{guild.name} [{guild.id}] follows {game_id} but hasnt set any channel')
 
@@ -180,8 +183,8 @@ class Tracker(commands.Cog):
                 logger.debug(f'No new posts for {game_id}.')
                 continue
 
-            if not channel:
-                logger.error(f'Could not find a proper channel [{channel_id} | {default_channel_id}].')
+            if not channel and not thread_filters:
+                logger.error(f'Could not find a proper channel [{channel_id} | {default_channel_id} | {thread_filters}].')
                 continue
 
             url_filters_per_service = await ORM.get_urlfilters_per_service(guild_id, game_id)
@@ -227,9 +230,12 @@ class Tracker(commands.Cog):
 
             if embeds:
                 messages.append({'embeds': embeds, 'game_id': game_id})
-            if messages:
+            if messages and channel:
                 message_queue.append((channel, messages, ordered_posts[0]['id']))
                 logger.debug(f"{guild_id}/{game_id}: {len(messages)} messages to send.")
+            elif messages and not channel:
+                logger.warning(f"{guild_id}/{game_id}: {len(messages)} messages to send but no channel found.")
+                continue
 
         await asyncio.gather(
             *[

@@ -412,7 +412,7 @@ class Tracker(commands.Cog):
 
         if channel.type not in [disnake.ChannelType.text, disnake.ChannelType.news, disnake.ChannelType.forum]:
             emb_err.title = "❌ Channel Error"
-            emb_err.description = "You can only set either a text channel, a news channel or a forum channel as default channel."
+            emb_err.description = "You can only set either a text channel, a news channel or a forum channel as game channel."
             await inter.edit_original_message(embed=emb_err)
             return
 

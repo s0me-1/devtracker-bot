@@ -354,9 +354,16 @@ class Tracker(commands.Cog):
         pass
 
     @set_channel.sub_command(name="default", description="Set the default notification channel.")
-    async def set_default_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel):
+    async def set_default_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.abc.GuildChannel):
 
         await inter.response.defer()
+
+        if channel.type not in [disnake.ChannelType.text, disnake.ChannelType.news, disnake.ChannelType.forum]:
+            emb_err = disnake.Embed(colour=14242639)
+            emb_err.title = "❌ Channel Error"
+            emb_err.description = "You can only set either a text channel, a news channel or a forum channel as default channel."
+            await inter.edit_original_message(embed=emb_err)
+            return
 
         await ORM.set_main_channel(channel.id, inter.guild_id)
         logger.info(f'{inter.guild.name} [{inter.guild_id}] : #{channel.name} set as default channel')
@@ -369,6 +376,14 @@ class Tracker(commands.Cog):
         bot_member = inter.guild.get_member(self.bot.user.id)
         perms = channel.permissions_for(bot_member)
         emb_err = disnake.Embed(colour=14242639)
+
+        if channel.type == disnake.ChannelType.forum:
+            emb_warn = disnake.Embed(colour=16763904)
+            emb_warn.title = "⚠️ Forum Channel"
+            emb_warn.description = "You must set up some thread url filters to use  Forum Channels, otherwise you won't receive anything."
+            emb_warn.description += " Please use `/dt-urlfilters thread` to set them up."
+            await inter.edit_original_message(embed=emb_warn)
+            return
 
         if not perms.view_channel:
             emb_err.title = "❌ Permission Error"
@@ -390,10 +405,16 @@ class Tracker(commands.Cog):
         )
 
     @set_channel.sub_command(name="game", description="Set the notification channel per game. The game will be followed if it's not the case already.")
-    async def set_game_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel, game_name: str = commands.Param(autocomplete=ac.games)):
+    async def set_game_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.abc.GuildChannel, game_name: str = commands.Param(autocomplete=ac.games)):
 
         await inter.response.defer()
         emb_err = disnake.Embed(colour=14242639)
+
+        if channel.type not in [disnake.ChannelType.text, disnake.ChannelType.news, disnake.ChannelType.forum]:
+            emb_err.title = "❌ Channel Error"
+            emb_err.description = "You can only set either a text channel, a news channel or a forum channel as default channel."
+            await inter.edit_original_message(embed=emb_err)
+            return
 
         games = await API.fetch_available_games()
         if not games:
@@ -420,6 +441,15 @@ class Tracker(commands.Cog):
             msg = f"<#{channel.id}> set as notification channel for `{game_name}`. You should receive the last post shortly.\n"
 
             bot_member = inter.guild.get_member(self.bot.user.id)
+
+            if channel.type == disnake.ChannelType.forum:
+                emb_warn = disnake.Embed(colour=16763904)
+                emb_warn.title = "⚠️ Forum Channel"
+                emb_warn.description = "You must set up some thread url filters to use Forum Channels, otherwise you won't receive anything."
+                emb_warn.description += " Please use `/dt-urlfilters thread` to set them up."
+                await inter.edit_original_message(embed=emb_warn)
+                return
+
             perms = channel.permissions_for(bot_member)
 
             if not perms.view_channel:
@@ -1160,7 +1190,7 @@ class Tracker(commands.Cog):
     # HELPERS
     # ---------------------------------------------------------------------------------
 
-    async def _fetch_last_post(self, game_id, channel: disnake.TextChannel, guild: disnake.Guild):
+    async def _fetch_last_post(self, game_id, channel: disnake.abc.GuildChannel, guild: disnake.Guild):
 
         post = await API.fetch_latest_post(game_id)
 
@@ -1176,6 +1206,9 @@ class Tracker(commands.Cog):
             await ORM.set_last_post(post_id, guild.id, game_id)
         except disnake.Forbidden as e:
             logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name}. last_post not updated.')
+            raise e
+        except AttributeError as e:
+            logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name} (no send method). last_post not updated.')
             raise e
 
     async def _fetch_fw(self):

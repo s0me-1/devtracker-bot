@@ -284,6 +284,10 @@ class Tracker(commands.Cog):
                 logger.error(f"HTTPException: {e.code} | {e.status} | {e.text}")
                 continue
 
+            except AttributeError as e:
+                logger.error(f"Invalid channel type {channel_or_thread} AttributeError: {e}")
+                continue
+
     @resfresh_posts.before_loop
     async def before_refresh(self):
         logger.info('Waiting before launching refresh task...')

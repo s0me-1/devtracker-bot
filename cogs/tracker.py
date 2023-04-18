@@ -275,6 +275,8 @@ class Tracker(commands.Cog):
                         await owner.create_dm()
                     error_msg = f"Sending the latest post for {msg['game_id']} in {channel_or_thread.mention} failed because I'm not allowed to send messages in this channel."
                     error_msg += "\nPlease give me the `Send Messages` permission for this channel or set another channel with `/dt-set-channel`."
+                    error_msg += f"\nYou'll find the permissions settings by **right-clicking** on {channel_or_thread.mention} name and selecting `Edit Channel` > `Permissions` ."
+                    error_msg += "\n\nIf you don't want to receive any more notifications for this game, you can use `/dt-unfollow {msg['game_id']}`."
                     await owner.dm_channel.send(error_msg)
                     logger.info(f'{channel_or_thread.guild.name}[{channel_or_thread.guild.id}]: Owner has been warned. ')
                 except disnake.Forbidden:

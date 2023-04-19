@@ -171,14 +171,14 @@ class Tracker(commands.Cog):
                 if not guild.owner_id:
                     continue
 
-                try:
-                    owner = await self.bot.fetch_user(guild.owner_id)
-                    msg = "It seems you're following `{game_id}` but you have not set any channel !\n"
-                    msg += "Please set a channel with `/dt-set-channel` to receives the latests posts."
-                    await owner.send(msg)
-                    logger.info(f'Sent a DM to {guild.name}[{guild.id}] owner to set a channel.')
-                except disnake.Forbidden:
-                    logger.warning(f'{guild.name}[{guild.id}] owner has blocked his DMs.')
+                # try:
+                #     owner = await self.bot.fetch_user(guild.owner_id)
+                #     msg = "It seems you're following `{game_id}` but you have not set any channel !\n"
+                #     msg += "Please set a channel with `/dt-set-channel` to receives the latests posts."
+                #     await owner.send(msg)
+                #     logger.info(f'Sent a DM to {guild.name}[{guild.id}] owner to set a channel.')
+                # except disnake.Forbidden:
+                #     logger.warning(f'{guild.name}[{guild.id}] owner has blocked his DMs.')
                 continue
 
             if game_id not in embeds_per_gid.keys():

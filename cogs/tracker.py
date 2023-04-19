@@ -168,15 +168,17 @@ class Tracker(commands.Cog):
                 logger.debug(f'{guild.name} [{guild.id}] follows {game_id} but hasnt set any channel')
 
                 # We can see the owner only if we have the Members privileged intent
-                if not guild.owner:
+                if not guild.owner_id:
                     continue
 
                 try:
+                    owner = await self.bot.fetch_user(guild.owner_id)
                     msg = "It seems you're following `{game_id}` but you have not set any channel !\n"
                     msg += "Please set a channel with `/dt-set-channel` to receives the latests posts."
-                    await guild.owner.send(msg)
+                    await owner.send(msg)
+                    logger.info(f'Sent a DM to {owner.name} to set a channel.')
                 except disnake.Forbidden:
-                    logger.warning(f'{guild.owner.name} has blocked his DMs.')
+                    logger.warning(f'{owner.name} has blocked his DMs.')
                 continue
 
             if game_id not in embeds_per_gid.keys():

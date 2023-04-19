@@ -176,9 +176,9 @@ class Tracker(commands.Cog):
                     msg = "It seems you're following `{game_id}` but you have not set any channel !\n"
                     msg += "Please set a channel with `/dt-set-channel` to receives the latests posts."
                     await owner.send(msg)
-                    logger.info(f'Sent a DM to {owner.name} to set a channel.')
+                    logger.info(f'Sent a DM to {guild.name}[{guild.id}] owner to set a channel.')
                 except disnake.Forbidden:
-                    logger.warning(f'{owner.name} has blocked his DMs.')
+                    logger.warning(f'{guild.name}[{guild.id}] owner has blocked his DMs.')
                 continue
 
             if game_id not in embeds_per_gid.keys():

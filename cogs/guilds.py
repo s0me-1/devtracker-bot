@@ -66,7 +66,7 @@ class Guilds(commands.Cog):
                 await owner.create_dm()
             await owner.dm_channel.send(msg, components=[self.server_btn])
         except disnake.Forbidden:
-            logger.warning(f'{owner.name} has blocked his DMs.')
+            logger.warning(f'{guild.name}[{guild.id}] owner has blocked his DMs.')
 
 
     @commands.Cog.listener()

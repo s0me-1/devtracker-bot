@@ -1277,6 +1277,43 @@ class Tracker(commands.Cog):
             for blockquote in soup.find_all('blockquote'):
                 blockquote.decompose()
 
+        # Fix links from CommLink
+        if origin in ['CommLink']:
+            for a in soup.find_all('a'):
+                has_u = False
+                has_i = False
+                has_b = False
+                if a['href'].startswith('\"'):
+                    a['href'] = a['href'][1:-1]
+
+                if a.text:
+                    backup_txt = a.get_text()
+                    for t in a.children:
+                        if t.name == 'u':
+                            t.decompose()
+                            has_u = True
+                        if t.name == 'i':
+                            t.decompose()
+                            has_i = True
+                        if t.name == 'b' or t.name == 'strong':
+                            t.decompose()
+                            has_b = True
+                        a.string = backup_txt
+
+                if has_u:
+                    nt = soup.new_tag("u")
+                    c = a.replace_with(nt)
+                    nt.append(c)
+                if has_i:
+                    nt = soup.new_tag("i")
+                    c = a.replace_with(nt)
+                    nt.append(c)
+                if has_b:
+                    nt = soup.new_tag("b")
+                    c = a.replace_with(nt)
+                    nt.append(c)
+
+
         # Fix blockquote from Spectrum
         if origin in ['rsi', 'Bungie.net']:
             for quoteauthor in soup.find_all('div', {'class': 'quoteauthor'}):

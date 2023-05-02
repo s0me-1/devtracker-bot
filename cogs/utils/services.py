@@ -73,7 +73,7 @@ CUSTOMIZERS = {
     },
 
     'default': {
-            'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/273-2710.png',
-            'color': 10070709
+        'icon_url': 'https://i33.servimg.com/u/f33/11/20/17/41/273-2710.png',
+        'color': 10070709
     },
 }

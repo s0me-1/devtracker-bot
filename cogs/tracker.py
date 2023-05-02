@@ -171,14 +171,6 @@ class Tracker(commands.Cog):
                 if not guild.owner_id:
                     continue
 
-                # try:
-                #     owner = await self.bot.fetch_user(guild.owner_id)
-                #     msg = "It seems you're following `{game_id}` but you have not set any channel !\n"
-                #     msg += "Please set a channel with `/dt-set-channel` to receives the latests posts."
-                #     await owner.send(msg)
-                #     logger.info(f'Sent a DM to {guild.name}[{guild.id}] owner to set a channel.')
-                # except disnake.Forbidden:
-                #     logger.warning(f'{guild.name}[{guild.id}] owner has blocked his DMs.')
                 continue
 
             if game_id not in embeds_per_gid.keys():
@@ -278,7 +270,7 @@ class Tracker(commands.Cog):
                     error_msg = f"Sending the latest post for {msg['game_id']} in {channel_or_thread.mention} failed because I'm not allowed to send messages in this channel."
                     error_msg += "\nPlease give me the `Send Messages` permission for this channel or set another channel with `/dt-set-channel`."
                     error_msg += f"\nYou'll find the permissions settings by **right-clicking** on {channel_or_thread.mention} name and selecting `Edit Channel` > `Permissions` ."
-                    error_msg += "\n\nIf you don't want to receive any more notifications for this game, you can use `/dt-unfollow {msg['game_id']}`."
+                    error_msg += f"\n\nIf you don't want to receive any more notifications for this game, you can use `/dt-unfollow {msg['game_id']}`."
                     await owner.dm_channel.send(error_msg)
                     logger.info(f'{channel_or_thread.guild.name}[{channel_or_thread.guild.id}]: Owner has been warned. ')
                 except disnake.Forbidden:
@@ -1270,7 +1262,7 @@ class Tracker(commands.Cog):
                 return re.sub(r"^\/\/", 'https://', img['src'])
         return None
 
-    def _sanitize_post_content(self, post_content, origin=None):
+    def _sanitize_post_content(self, post_content, origin=None, strip_blockquotes=False):
 
         if origin not in ['Twitter', ]:
             post_content = post_content.replace('\n', '')
@@ -1280,6 +1272,10 @@ class Tracker(commands.Cog):
 
         soup = BeautifulSoup(post_content, "html.parser")
         nb_char_overflow = len(soup.prettify()) - EMBEDS_MAX_DESC
+
+        if strip_blockquotes and nb_char_overflow > 0:
+            for blockquote in soup.find_all('blockquote'):
+                blockquote.decompose()
 
         # Fix blockquote from Spectrum
         if origin in ['rsi', 'Bungie.net']:
@@ -1399,7 +1395,10 @@ class Tracker(commands.Cog):
 
         service = post['account']['service']
 
-        description, img_url = self._sanitize_post_content(post['content'], origin=service)
+        # Strip blockquotes from Spectrum if it's a patch note, because they'll hide the reply content uselessly
+        strip_blockquotes = 'https://robertsspaceindustries.com/spectrum/community/SC/forum/190048/thread/' in post['topicUrl']
+
+        description, img_url = self._sanitize_post_content(post['content'], origin=service, strip_blockquotes=strip_blockquotes)
 
         color = CUSTOMIZERS['default']['color']
         author_icon_url = CUSTOMIZERS['default']['icon_url']

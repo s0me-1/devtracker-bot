@@ -21,10 +21,12 @@ class DiscordMarkdownConverted(MarkdownConverter):
 
         style = self.options['heading_style'].lower()
         text = text.rstrip()
-        if style == UNDERLINED and n <= 2:
-            return f'**__{text}__**\n\n'
+        if text:
+            if style == UNDERLINED and n <= 2:
+                return f'**__{text}__**\n\n'
 
-        return f'**{text}**\n\n'
+            return f'**{text}**\n\n'
+        return '\n'
 
     def convert_p(self, el, text, convert_as_inline):
         """

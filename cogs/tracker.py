@@ -1200,16 +1200,19 @@ class Tracker(commands.Cog):
 
         em = self._generate_embed(post)
         post_id = post['id']
-        logger.info(f'{guild.name} [{guild.id}] : Fetching {post_id} for "{game_id}". (Dest: `#{channel.name}`)')
-        try:
-            await channel.send(embed=em)
-            await ORM.set_last_post(post_id, guild.id, game_id)
-        except disnake.Forbidden as e:
-            logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name}. last_post not updated.')
-            raise e
-        except AttributeError as e:
-            logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name} (no send method). last_post not updated.')
-            raise e
+        if isinstance(channel, disnake.TextChannel):
+            logger.info(f'{guild.name} [{guild.id}] : Fetching {post_id} for "{game_id}". (Dest: `#{channel.name}`)')
+            try:
+                await channel.send(embed=em)
+                await ORM.set_last_post(post_id, guild.id, game_id)
+            except disnake.Forbidden as e:
+                logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name}. last_post not updated.')
+                raise e
+            except AttributeError as e:
+                logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name} (no send method). last_post not updated.')
+                raise e
+        else:
+            logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel} (not a TextChannel). last_post not updated.')
 
     async def _fetch_fw(self):
         follows = await ORM.get_all_follows()

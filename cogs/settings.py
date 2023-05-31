@@ -258,12 +258,15 @@ class Settings(commands.Cog):
                 error_msg = ''
                 bot_member = guild.get_member(self.bot.user.id)
                 channel = guild.get_channel(game_ch_id)
-                perms = channel.permissions_for(bot_member)
+                if isinstance(channel, disnake.abc.GuildChannel) or isinstance(channel, disnake.Thread):
+                    perms = channel.permissions_for(bot_member)
 
-                if not perms.view_channel:
-                    error_msg = "**[ERROR]** Missing `View Channel` Permission"
-                if not perms.send_messages:
-                    error_msg = "**[ERROR]** Missing `Send Message` Channel Permission"
+                    if not perms.view_channel:
+                        error_msg = "**[ERROR]** Missing `View Channel` Permission"
+                    if not perms.send_messages:
+                        error_msg = "**[ERROR]** Missing `Send Message` Channel Permission"
+                else:
+                    error_msg = "**[ERROR]** No valid channel set."
 
                 if not error_msg:
                     fw_line += f"`  |  <#{game_ch_id}> - [{last_post_id}](https://developertracker.com/{gid}/?post={last_post_id})\n"

@@ -1522,8 +1522,11 @@ class Tracker(commands.Cog):
                     return new_channel
                 elif thread_id and any(f.strip() in em_url for f in filters_list_sanitized):
                     new_thread = guild.get_thread(thread_id)
-                    logger.info(f"[{guild.id}] Overriding channel by #{new_thread.name}: {em_url} matched {filters} [Multi Filter Mode]).")
-                    return new_thread
+                    if new_thread:
+                        logger.info(f"[{guild.id}] Overriding channel by #{new_thread.name}: {em_url} matched {filters} [Multi Filter Mode]).")
+                        return new_thread
+                    else:
+                        logger.warning(f"[{guild.id}] Thread {thread_id} not found. Skipping override.")
         return False
 
 

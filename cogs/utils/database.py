@@ -261,6 +261,9 @@ class ORM:
 
                 game_ids = set([game_id for _, game_id, _, _ in accounts])
                 followable_accounts = await API.fetch_all_accounts(game_ids)
+                if not followable_accounts:
+                    logger.error(f'Could not fetch accounts for {game_ids}')
+                    return None
                 service_per_game_per_account = defaultdict(dict)
                 for game_idx, followable_accounts_per_game in enumerate(followable_accounts):
                     game_id = list(game_ids)[game_idx]
@@ -279,6 +282,9 @@ class ORM:
 
             params_ignored = await _get_query_params(ignored_accounts)
             params_allowed = await _get_query_params(allowed_accounts)
+            if not params_ignored or not params_allowed:
+                logger.error('No params received. Aborting accounts reset.')
+                return
             query_ignored = "UPDATE ignored_accounts SET service_id = ? WHERE account_id = ?;"
             query_allowed = "UPDATE allowed_accounts SET service_id = ? WHERE account_id = ?;"
             await conn.executemany(query_ignored, params_ignored)

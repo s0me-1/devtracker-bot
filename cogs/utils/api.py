@@ -167,7 +167,11 @@ class API:
                     ],
                     return_exceptions=True
                 )
-                return res
+                if all(res):
+                    return res
+
+                # Means some API calls failed
+                return None
 
             except asyncio.TimeoutError as e:
                 logger.error(f'TIMEOUT: The Fetchs accounts process took more than {timeout.total} seconds. - {e}')

@@ -3,7 +3,7 @@ import time
 import aiohttp
 
 import sec
-from aiohttp import ClientSession, ClientConnectorError, ClientTimeout
+from aiohttp import ClientSession, ClientConnectorError, ClientTimeout, ContentTypeError
 import asyncio
 
 
@@ -53,6 +53,9 @@ class API:
                     api_games_data = [(g['identifier'], g['name']) for g in games]
                     games = api_games_data
             except ClientConnectorError as e:
+                logger.error(str(e))
+                games = None
+            except ContentTypeError as e:
                 logger.error(str(e))
                 games = None
 
@@ -147,6 +150,10 @@ class API:
                     return accounts
             except ClientConnectorError as e:
                 logger.error(str(e))
+                accounts = None
+            except ContentTypeError as e:
+                logger.error(str(e))
+                accounts = None
 
     async def fetch_all_accounts(self, game_ids):
 
@@ -179,3 +186,7 @@ class API:
                     return set(services)
             except ClientConnectorError as e:
                 logger.error(str(e))
+                services = set('API Error')
+            except ContentTypeError as e:
+                logger.error(str(e))
+                services = set('API Error')

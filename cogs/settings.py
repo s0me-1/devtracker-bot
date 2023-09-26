@@ -93,7 +93,7 @@ class Settings(commands.Cog):
                 emb_err.description = f"Missing `Send Message` Channel Permission for default channel <#{default_channel_id}> "
             chname = f'<#{default_channel_id}>'
 
-        api_md = "[DeveloperTracker.com](https://developertracker.com/)\n" + u'\u200B'
+        api_md = "[DeveloperTracker.com](https://api.developertracker.com/games)\n" + u'\u200B'
         fw_status = await ORM.get_follow_status(inter.guild_id)
 
         ignored_accounts = await ORM.get_ignored_accounts_per_game(inter.guild_id)

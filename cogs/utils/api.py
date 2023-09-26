@@ -38,7 +38,13 @@ class API:
                     response_time = time.monotonic() - start
                     return resp.status, response_time
             except ClientConnectorError as e:
+                # This likely means the API Endpoint is down.
                 logger.error(str(e))
+                return 500, None
+            except ContentTypeError as e:
+                # This likely means the API Endpoint crashed.
+                logger.error(str(e))
+                return 500, None
 
     async def fetch_available_games(self):
         url = f'{self.api_baseurl}/games'

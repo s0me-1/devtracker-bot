@@ -132,9 +132,9 @@ class Settings(commands.Cog):
         api_status = f"API Status - {emoji} ({api_status_code})"
         version = f'v{self.bot.__version__}'
 
-        description = "─────────────────────────────────────────────────────────────────────────────\n" \
-            " - DevTracker Official [Discord Server](https://discord.gg/QN9uveFYXX).\n" \
-            " - DevTracker [Github](https://github.com/s0me-1/devtracker-bot#commands) page.\n" + u'\u200B'
+        description = "─────────────────────────────────────────────────────────────\n" \
+            "- DevTracker Official [Discord Server](https://discord.gg/QN9uveFYXX).\n" \
+            "- DevTracker [Github](https://github.com/s0me-1/devtracker-bot#commands) page.\n" + u'\u200B'
 
         emb = disnake.Embed(
             description=description,

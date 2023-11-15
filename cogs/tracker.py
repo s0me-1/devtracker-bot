@@ -1295,7 +1295,7 @@ class Tracker(commands.Cog):
                 has_u = False
                 has_i = False
                 has_b = False
-                if 'href' in a.keys() and a['href'].startswith('\"'):
+                if a.has_attr('href') and a['href'].startswith('\"'):
                     a['href'] = a['href'][1:-1]
 
                 if a.text:

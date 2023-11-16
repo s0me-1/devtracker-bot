@@ -1215,11 +1215,9 @@ class Tracker(commands.Cog):
                 await channel.send(embed=em)
                 await ORM.set_last_post(post_id, guild.id, game_id)
             except disnake.Forbidden as e:
-                logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name}. last_post not updated.')
-                raise e
+                logger.warning(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name}. last_post not updated. ({e})')
             except AttributeError as e:
-                logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name} (no send method). last_post not updated.')
-                raise e
+                logger.warning(f'{guild.name} [{guild.id}] : Cannot send message in #{channel.name} (no send method). last_post not updated. ({e})')
         else:
             logger.error(f'{guild.name} [{guild.id}] : Cannot send message in #{channel} (not a TextChannel). last_post not updated.')
 

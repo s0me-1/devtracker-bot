@@ -1087,7 +1087,7 @@ class Tracker(commands.Cog):
             await ORM.unset_game_channel(inter.guild_id, game_id)
             logger.info(f'{inter.guild.name} [{inter.guild_id}] : Unset custom channel for `{game}`')
             emb_success.description = f"The notification channel for `{game}` is no longer set."
-            await inter.edit_original_message(emb=emb_success)
+            await inter.edit_original_message(embed=emb_success)
 
     # ---------------------------------------------------------------------------------
     # APPLICATION COMMANDS

@@ -154,7 +154,8 @@ class Tracker(commands.Cog):
 
             # Means the bot lost permissions for some reasons
             if not guild:
-                logger.warning(f'{guild_id} cant be found in the discord API !')
+                logger.warning(f'{guild_id} cant be found in the discord API ! Removing it from the DB.')
+                await ORM.rm_guild(guild_id)
                 continue
 
             thread_filters = await ORM.get_urlfilters_thread(guild_id, game_id)

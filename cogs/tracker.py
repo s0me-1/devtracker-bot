@@ -277,11 +277,11 @@ class Tracker(commands.Cog):
                     logger.warning(f'{channel_or_thread.guild.name}[{channel_or_thread.guild.id}]: Owner cannot be contacted via DM (Forbidden) ')
 
             except disnake.HTTPException as e:
-                logger.error(f"HTTPException: {e.code} | {e.status} | {e.text}")
+                logger.warning(f"HTTPException: {e.code} | {e.status} | {e.text}")
                 continue
 
             except AttributeError as e:
-                logger.error(f"Invalid channel type {channel_or_thread} AttributeError: {e}")
+                logger.warning(f"Invalid channel type '{channel_or_thread}' | {e}")
                 continue
 
     @resfresh_posts.before_loop

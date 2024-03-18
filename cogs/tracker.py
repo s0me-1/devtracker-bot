@@ -1444,7 +1444,9 @@ class Tracker(commands.Cog):
         service = post['account']['service']
 
         # Strip blockquotes from Spectrum if it's a patch note, because they'll hide the reply content uselessly
-        strip_blockquotes = 'https://robertsspaceindustries.com/spectrum/community/SC/forum/190048/thread/' in post['topicUrl']
+        strip_blockquotes = False
+        if post['topicUrl']:
+            strip_blockquotes = 'https://robertsspaceindustries.com/spectrum/community/SC/forum/190048/thread/' in post['topicUrl']
 
         description, img_url = self._sanitize_post_content(post['content'], origin=service, strip_blockquotes=strip_blockquotes)
 

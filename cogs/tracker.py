@@ -1,6 +1,7 @@
 import asyncio
 from collections import defaultdict
 import logging
+import random
 import re
 
 from bs4 import BeautifulSoup, NavigableString
@@ -250,6 +251,8 @@ class Tracker(commands.Cog):
         logger.debug('Refresh task completed.')
 
     async def _send_embeds(self, channel_or_thread, messages, last_post_id):
+
+        await asyncio.sleep(random.randint(1, 10))  # Avoid rate limits
         for msg in messages:
             if channel_or_thread:
                 logger.info(f"{channel_or_thread.guild.name} [{channel_or_thread.guild.id}]: Sending {len(msg['embeds'])} embeds to {channel_or_thread.name}.")
@@ -259,6 +262,7 @@ class Tracker(commands.Cog):
             try:
                 await channel_or_thread.send(embeds=msg['embeds'])
                 await ORM.set_last_post(last_post_id, channel_or_thread.guild.id, msg['game_id'])
+                await asyncio.sleep(random.randint(1, 3)) # Avoid rate limits
 
             except disnake.Forbidden:
                 logger.warning(f"Missing permissions for #{channel_or_thread.name}")

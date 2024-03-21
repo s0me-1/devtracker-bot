@@ -97,7 +97,7 @@ class Tracker(commands.Cog):
         game_ids = [g[0] for g in local_games]
 
         guild = None
-        channel = None
+        target_channel = None
         default_channel_id = None
 
         all_ignored_accounts = await ORM.get_all_ignored_accounts_per_guild()
@@ -161,9 +161,9 @@ class Tracker(commands.Cog):
 
             thread_filters = await ORM.get_urlfilters_thread(guild_id, game_id)
             if channel_id:
-                channel = guild.get_channel(channel_id)
+                target_channel = guild.get_channel(channel_id)
             elif default_channel_id:
-                channel = guild.get_channel(default_channel_id)
+                target_channel = guild.get_channel(default_channel_id)
             elif len(thread_filters) > 0:
                 logger.warning(f'{guild.name} [{guild.id}] follows {game_id} hasnt set any channel but have some thread filters')
             else:
@@ -179,15 +179,14 @@ class Tracker(commands.Cog):
                 logger.debug(f'No new posts for {game_id}.')
                 continue
 
-            if not channel and not thread_filters:
+            if not target_channel and not thread_filters:
                 logger.error(f'Could not find a proper channel [{channel_id} | {default_channel_id} | {thread_filters}].')
                 continue
 
             url_filters_per_service = await ORM.get_urlfilters_per_service(guild_id, game_id)
 
-            messages = []
+            messages_per_channel = defaultdict(list)
             embeds = []
-            embeds_size = 0
 
             for em, account_id, service_id in embeds_per_gid[game_id]:
 
@@ -205,33 +204,61 @@ class Tracker(commands.Cog):
 
                     # Means we have to override the current channel
                     elif isinstance(filter_result, disnake.TextChannel):
-                        channel = filter_result
+                        target_channel = filter_result
 
                     elif isinstance(filter_result, disnake.Thread):
-                        channel = filter_result
+                        target_channel = filter_result
 
-                embeds.append(em)
-                embeds_size += len(em)
+                embeds.append({
+                    'embed': em,
+                    'channel': target_channel,
+                    'game_id': game_id
+                })
 
-                # Remove last embed if we're not repecting the Discords limits
-                if len(embeds) > EMBEDS_MAX_AMOUNT or embeds_size > EMBEDS_MAX_TOTAL:
-                    logger.warning("Discord Limits Reached, creating a new message.")
-                    embeds.pop()
-                    messages.append({
-                        'embeds': embeds,
+            embed_per_channel = defaultdict(list)
+            for embed in embeds:
+                if embed_per_channel.get(embed['channel']):
+                    embed_per_channel[embed['channel']]['embeds'].append(embed['embed'])
+                else:
+                    embed_per_channel[embed['channel']] = {
+                        'embeds': [embed['embed']],
                         'game_id': game_id
-                    })
-                    embeds = [em]
-                    embeds_size = len(em)
+                    }
 
-            if embeds:
-                messages.append({'embeds': embeds, 'game_id': game_id})
-            if messages and channel:
-                message_queue.append((channel, messages, ordered_posts[0]['id']))
-                logger.debug(f"{guild_id}/{game_id}: {len(messages)} messages to send.")
-            elif messages and not channel:
-                logger.warning(f"{guild_id}/{game_id}: {len(messages)} messages to send but no channel found.")
-                continue
+            embeds_stack = []
+            embeds_stack_size = 0
+            for channel, emb_data in embed_per_channel.items():
+
+                embeds_stack = []
+                embeds_stack_size = 0
+
+                for em in emb_data['embeds']:
+                    embeds_stack.append(em)
+                    embeds_stack_size += len(em)
+
+                    # Remove last embed if we're not repecting the Discords limits
+                    if len(embeds_stack) > EMBEDS_MAX_AMOUNT or embeds_stack_size > EMBEDS_MAX_TOTAL:
+                        logger.warning("Discord Limits Reached, creating a new message.")
+                        embeds_stack.pop()
+                        messages_per_channel[channel].append({
+                            'embeds': embeds_stack,
+                            'game_id': emb_data['game_id'],
+                        })
+                        embeds_stack = [em]
+                        embeds_stack_size = len(em)
+
+                if embeds_stack:
+                    messages_per_channel[channel].append({
+                        'embeds': embeds_stack,
+                        'game_id': emb_data['game_id'],
+                    })
+
+            for channel, messages in messages_per_channel.items():
+                if channel:
+                    message_queue.append((channel, messages, ordered_posts[0]['id']))
+                    logger.debug(f"{guild_id}/{game_id}: {len(messages)} messages to send.")
+                else:
+                    logger.warning(f"{guild_id}/{game_id}: {len(messages)} messages to send but no channel found.")
 
         await asyncio.gather(
             *[

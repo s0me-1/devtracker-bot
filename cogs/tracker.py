@@ -83,10 +83,10 @@ class Tracker(commands.Cog):
         db_guilds_ids = await ORM.get_all_guilds()
 
         # Guild added bot while it was offline
-        for guild in connected_guilds_ids:
-            if guild.id not in db_guilds_ids:
-                await self.bot.get_guild(guild.id).leave()
-                removed_guilds_from_discord.append(guild.id)
+        for guild_id in connected_guilds_ids:
+            if guild_id not in db_guilds_ids:
+                await self.bot.get_guild(guild_id).leave()
+                removed_guilds_from_discord.append(guild_id)
 
         # Guild removed bot while it was offline
         for guild_id in db_guilds_ids:

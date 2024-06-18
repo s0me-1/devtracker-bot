@@ -74,7 +74,28 @@ class Tracker(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info("DevTracker has landed.")
+        logger.info("Pruning guilds...")
 
+        removed_guilds_from_discord = []
+        removed_guilds_from_db = []
+
+        # Guild added bot while it was offline
+        db_guilds = await ORM.get_all_guilds()
+        async for guild in self.bot.fetch_guilds():
+            if guild.id not in db_guilds:
+                await self.bot.get_guild(guild.id).leave()
+                removed_guilds_from_discord.append(guild.id)
+
+        # Guild removed bot while it was offline
+        for guild_id in db_guilds:
+            if guild_id not in self.bot.guilds:
+                await ORM.rm_guild(guild_id)
+                removed_guilds_from_db.append(guild_id)
+
+        logger.info(f"Removed {len(removed_guilds_from_discord)} guilds from Discord. [{removed_guilds_from_discord}]")
+        logger.info(f"Removed {len(removed_guilds_from_db)} guilds from database. [{removed_guilds_from_db}]")
+
+        logger.info("Pruning guilds done.")
     # ---------------------------------------------------------------------------------
     # TASKS
     # ---------------------------------------------------------------------------------

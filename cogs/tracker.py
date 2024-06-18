@@ -74,7 +74,6 @@ class Tracker(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info("DevTracker has landed.")
-        logger.info("Pruning guilds...")
 
         removed_guilds_from_discord = []
         removed_guilds_from_db = []
@@ -82,23 +81,27 @@ class Tracker(commands.Cog):
         connected_guilds_ids = [guild.id for guild in self.bot.guilds]
         db_guilds_ids = await ORM.get_all_guilds()
 
-        # Guild added bot while it was offline
-        for guild_id in connected_guilds_ids:
-            if guild_id not in db_guilds_ids:
-                await self.bot.get_guild(guild_id).leave()
-                removed_guilds_from_discord.append(guild_id)
+        if len(connected_guilds_ids) != len(db_guilds_ids):
+            logger.warning(f"Connected guilds: {len(connected_guilds_ids)} | DB guilds: {len(db_guilds_ids)}")
+            logger.warning("Local database is out of sync with Discord. Pruning guilds...")
 
-        # Guild removed bot while it was offline
-        for guild_id in db_guilds_ids:
+            # Guild added bot while it was offline
+            for guild_id in connected_guilds_ids:
+                if guild_id not in db_guilds_ids:
+                    await self.bot.get_guild(guild_id).leave()
+                    removed_guilds_from_discord.append(guild_id)
 
-            if guild_id not in connected_guilds_ids:
-                await ORM.rm_guild(guild_id)
-                removed_guilds_from_db.append(guild_id)
+            # Guild removed bot while it was offline
+            for guild_id in db_guilds_ids:
 
-        logger.info(f"Removed {len(removed_guilds_from_discord)} guilds from Discord. [{removed_guilds_from_discord}]")
-        logger.info(f"Removed {len(removed_guilds_from_db)} guilds from database. [{removed_guilds_from_db}]")
+                if guild_id not in connected_guilds_ids:
+                    await ORM.rm_guild(guild_id)
+                    removed_guilds_from_db.append(guild_id)
 
-        logger.info("Pruning guilds done.")
+            logger.info(f"Removed {len(removed_guilds_from_discord)} guilds from Discord. [{removed_guilds_from_discord}]")
+            logger.info(f"Removed {len(removed_guilds_from_db)} guilds from database. [{removed_guilds_from_db}]")
+
+            logger.info("Pruning guilds done.")
     # ---------------------------------------------------------------------------------
     # TASKS
     # ---------------------------------------------------------------------------------

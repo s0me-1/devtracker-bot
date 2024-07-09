@@ -1036,6 +1036,15 @@ class Tracker(commands.Cog):
 
         modal_inter = await self._urlfilters_send_modal(inter, game_name, service_id, current_channel_filters, thread)
 
+        if not modal_inter:
+            emb_err.title = "❌ Modal Error"
+            emb_err.description = "Modal submission was not received."
+            try:
+                await inter.send(embed=emb_err)
+            except:
+                logger.warning(f"Failed to send modal error message to {inter.author.name} [{inter.author.id}]")
+                return
+
         await modal_inter.response.defer()
         emb_success = disnake.Embed(title="✅  Success", colour=6076508)
         emb_success.description = f"URL filters for **{game_name}** [`{service_id}`] have been updated.\n" \

@@ -1331,6 +1331,9 @@ class Tracker(commands.Cog):
         # Last img first
         imgs.reverse()
         for img in imgs:
+            if 'src' not in img:
+                # I don't even know how it happens but it happens
+                continue
             if 'icon' in img['src'] and '.gif' in img['src']:
                 # Some services use old .gif emojis, in the future it would probably
                 # be better to check for a minimal size.

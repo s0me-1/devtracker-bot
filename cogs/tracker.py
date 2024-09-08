@@ -323,6 +323,7 @@ class Tracker(commands.Cog):
                 if not channel_or_thread.guild.owner_id:
                     continue
                 try:
+
                     owner = await self.bot.fetch_user(channel_or_thread.guild.owner_id)
                     if not owner.dm_channel:
                         await owner.create_dm()
@@ -332,7 +333,8 @@ class Tracker(commands.Cog):
                     error_msg += f"\n\nIf you don't want to receive any more notifications for this game, you can use `/dt-unfollow {msg['game_id']}`."
                     await owner.dm_channel.send(error_msg)
                     logger.info(f'{channel_or_thread.guild.name}[{channel_or_thread.guild.id}]: Owner has been warned. ')
-                except disnake.Forbidden:
+                except disnake.HTTPException as e:
+                    logger.warning(f"HTTPException: {e.code} | {e.status} | {e.text}")
                     logger.warning(f'{channel_or_thread.guild.name}[{channel_or_thread.guild.id}]: Owner cannot be contacted via DM (Forbidden) ')
 
             except disnake.HTTPException as e:

@@ -192,7 +192,7 @@ class Tracker(commands.Cog):
             elif default_channel_id:
                 target_channel = guild.get_channel(default_channel_id)
             elif len(thread_filters) > 0:
-                logger.warning(f'{guild.name} [{guild.id}] follows {game_id} hasnt set any channel but have some thread filters')
+                logger.debug(f'{guild.name} [{guild.id}] follows {game_id} hasnt set any channel but have some thread filters')
             else:
                 logger.debug(f'{guild.name} [{guild.id}] follows {game_id} but hasnt set any channel')
 

@@ -207,7 +207,7 @@ class Tracker(commands.Cog):
                 continue
 
             if not target_channel and not thread_filters:
-                logger.error(f'Could not find a proper channel [{channel_id} | {default_channel_id} | {thread_filters}].')
+                logger.warning(f'Could not find a proper channel [{channel_id} | {default_channel_id} | {thread_filters}].')
                 continue
 
             url_filters_per_service = await ORM.get_urlfilters_per_service(guild_id, game_id)

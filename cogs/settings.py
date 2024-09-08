@@ -74,7 +74,18 @@ class Settings(commands.Cog):
     @commands.slash_command(name="dt-config", description="See the current configuration of this server.")
     @commands.default_member_permissions(manage_guild=True)
     async def get_current_config(self, inter: disnake.ApplicationCommandInteraction):
-        logger.info(f'{inter.guild.name} [{inter.guild_id}] : Status request')
+
+        if inter.guild:
+            logger.info(f'{inter.guild.name} [{inter.guild_id}] : Status request')
+        else:
+            logger.info(f'{inter.author.name} [{inter.author.id}] : Status request from DMs, sending error')
+            emb_err = disnake.Embed(colour=14242639)
+            emb_err.title = "❌ User Error"
+            emb_err.description = "I couldn't find your server. Please check:\n"
+            emb_err.description += "- You are using this command in a server.\n"
+            emb_err.description += "- I have enough permissions to get your server details."
+            await inter.response.send_message(embed=emb_err, ephemeral=True)
+            return
 
         await inter.response.defer()
 

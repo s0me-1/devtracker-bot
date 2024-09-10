@@ -237,6 +237,7 @@ class ORM:
             params = (guild_id,)
 
             await conn.execute(query, params)
+            await conn.commit()
 
     async def get_all_follows(self):
         async with aiosqlite.connect(DB_FILE) as conn:

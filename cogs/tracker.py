@@ -281,6 +281,11 @@ class Tracker(commands.Cog):
                     })
 
             for channel, messages in messages_per_channel.items():
+
+                if not ordered_posts:
+                    logger.warning(f"{game_id} is in the available games but no posts were found.")
+                    continue
+
                 if channel:
                     message_queue.append((channel, messages, ordered_posts[0]['id']))
                     logger.debug(f"{guild_id}/{game_id}: {len(messages)} messages to send.")

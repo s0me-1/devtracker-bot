@@ -386,7 +386,8 @@ class ORM:
         async with aiosqlite.connect(DB_FILE) as conn:
             conn.row_factory = aiosqlite.Row
             await conn.set_trace_callback(logger.debug)
-            await conn.execute("PRAGMA foreign_keys = 1")
+            # Uncomment line below to delete follows of games not in API
+            # await conn.execute("PRAGMA foreign_keys = 1")
 
             query = "SELECT id FROM games"
 
@@ -395,19 +396,29 @@ class ORM:
                 async for row in cr:
                     db_games_ids.add(row['id'])
 
-            api_games_ids = {game[0] for game in api_games}
+            api_games_ids = {gid for gid in api_games.values()}
 
             to_rem = db_games_ids.difference(api_games_ids)
-            to_rem = list(set(to_rem))
+            to_rem = [(gid,) for gid in to_rem]
+
+            logger.info(f'API GAMES IDS: {api_games_ids}')
+            logger.info(f'DB GAMES IDS: {db_games_ids}')
+
+            if 'star-citizen' in to_rem:
+                logger.warning(f'SC DUMP ATTEMPT, is API okay ?: {api_games_ids}')
+                return
+
+            logger.warning(f'Will be deleted from DB: {to_rem}')
             if to_rem:
-                query = "DELETE FROM games WHERE id = ?;"
+                query = "DELETE FROM games WHERE id IN (?);"
                 await conn.executemany(query, to_rem)
                 await conn.commit()
 
             to_add = api_games_ids.difference(db_games_ids)
-            to_add = [game for game in api_games if game[0] in to_add]
+            to_add = [game for game in api_games.items() if game[1] in to_add]
+            logger.warning(f'Will be added to DB: {to_add}')
             if to_add:
-                query = "INSERT OR IGNORE INTO games ('id', 'name') VALUES (?, ?);"
+                query = "INSERT OR IGNORE INTO games ('name', 'id') VALUES (?, ?);"
                 await conn.executemany(query, to_add)
                 await conn.commit()
 

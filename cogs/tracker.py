@@ -149,7 +149,7 @@ class Tracker(commands.Cog):
         embeds_per_gid = defaultdict(list)
 
         for gid in game_ids:
-            if gid not in posts_per_gid.keys():
+            if gid not in posts_per_gid.keys() or not posts_per_gid[gid]:
                 logger.warning(f"{gid} is in the available games but no posts were found.")
                 continue
 
@@ -284,7 +284,7 @@ class Tracker(commands.Cog):
             for channel, messages in messages_per_channel.items():
 
                 if channel:
-                    message_queue.append((channel, messages, ordered_posts[0]['id']))
+                    message_queue.append((channel, messages, ordered_posts[-1]['id']))
                     logger.debug(f"{guild_id}/{game_id}: {len(messages)} messages to send.")
                 else:
                     logger.warning(f"{guild_id}/{game_id}: {len(messages)} messages to send but no channel found.")

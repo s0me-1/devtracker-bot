@@ -184,6 +184,7 @@ class Tracker(commands.Cog):
             if not guild:
                 logger.warning(f'{guild_id} cant be found in the discord API ! Removing it from the DB.')
                 await ORM.rm_guild(guild_id)
+                await ORM.rm_follow(guild_id)
                 continue
 
             thread_filters = await ORM.get_urlfilters_thread(guild_id, game_id)
@@ -281,10 +282,6 @@ class Tracker(commands.Cog):
                     })
 
             for channel, messages in messages_per_channel.items():
-
-                if not ordered_posts:
-                    logger.warning(f"{game_id} is in the available games but no posts were found.")
-                    continue
 
                 if channel:
                     message_queue.append((channel, messages, ordered_posts[0]['id']))

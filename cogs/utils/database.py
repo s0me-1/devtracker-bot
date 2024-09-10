@@ -229,6 +229,15 @@ class ORM:
                     follows.append(tuple(row))
             return follows
 
+    async def rm_follow(self, guild_id):
+        async with aiosqlite.connect(DB_FILE) as conn:
+            await conn.set_trace_callback(logger.debug)
+
+            query = "DELETE FROM follows WHERE follower_guild_id = ?;"
+            params = (guild_id,)
+
+            await conn.execute(query, params)
+
     async def get_all_follows(self):
         async with aiosqlite.connect(DB_FILE) as conn:
             await conn.set_trace_callback(logger.debug)

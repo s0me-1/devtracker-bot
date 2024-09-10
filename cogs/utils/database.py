@@ -398,9 +398,9 @@ class ORM:
             api_games_ids = {game[0] for game in api_games}
 
             to_rem = db_games_ids.difference(api_games_ids)
-            to_rem = [set(id) for id in to_rem]
+            to_rem = list(set(to_rem))
             if to_rem:
-                query = "DELETE FROM games WHERE id IN ?;"
+                query = "DELETE FROM games WHERE id = ?;"
                 await conn.executemany(query, to_rem)
                 await conn.commit()
 

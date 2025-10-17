@@ -359,6 +359,12 @@ class Tracker(commands.Cog):
                 logger.warning(f"Invalid channel type '{channel_or_thread}' | {e}")
                 continue
 
+    @reset_bot_state.before_loop
+    async def before_reset(self):
+        logger.info('Waiting before launching reset task...')
+        await self.bot.wait_until_ready()
+        logger.info(f'Bot ready, launching reset task. (Loop every {self.reset_bot_state.days} days)')
+
     @resfresh_posts.before_loop
     async def before_refresh(self):
         logger.info('Waiting before launching refresh task...')

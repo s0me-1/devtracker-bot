@@ -108,7 +108,7 @@ class Tracker(commands.Cog):
     # TASKS
     # ---------------------------------------------------------------------------------
 
-    @tasks.loop(days=1)
+    @tasks.loop(hours=24)
     async def reset_bot_state(self):
         logger.info("Daily bot state reset started.")
 
@@ -363,7 +363,7 @@ class Tracker(commands.Cog):
     async def before_reset(self):
         logger.info('Waiting before launching reset task...')
         await self.bot.wait_until_ready()
-        logger.info(f'Bot ready, launching reset task. (Loop every {self.reset_bot_state.days} days)')
+        logger.info(f'Bot ready, launching reset task. (Loop every {self.reset_bot_state.hours} hours)')
 
     @resfresh_posts.before_loop
     async def before_refresh(self):

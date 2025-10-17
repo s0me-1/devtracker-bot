@@ -60,10 +60,12 @@ class Tracker(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.EM = EmojiMapper()
+        self.reset_bot_state.start()
         self.resfresh_posts.start()
         logger.info("Loaded.")
 
     def cog_unload(self):
+        self.reset_bot_state.cancel()
         self.resfresh_posts.cancel()
         logger.info('Unloaded.')
 

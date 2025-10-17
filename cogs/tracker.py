@@ -106,6 +106,16 @@ class Tracker(commands.Cog):
     # TASKS
     # ---------------------------------------------------------------------------------
 
+    @tasks.loop(days=1)
+    async def reset_bot_state(self):
+        logger.info("Daily bot state reset started.")
+
+        saveAttempt = await self.set_saved_post_ids()
+        if saveAttempt != 'success':
+            logger.error("Bot state reset failed.")
+        else:
+            logger.info("Bot state reset done.")
+
     @tasks.loop(seconds=30)
     async def resfresh_posts(self):
 
@@ -1223,28 +1233,38 @@ class Tracker(commands.Cog):
                     msg += f"**Filter result:** `{filter_result}`"
                 await inter.edit_original_message(content=msg, embed=em)
 
-    @commands.slash_command(name="dt-save-post-ids", description="Update posts state of the Bot.", guild_ids=[984016998084247582, 687999396612407341])
-    @commands.default_member_permissions(manage_guild=True)
-    async def set_current_post_ids(self, inter: disnake.ApplicationCommandInteraction):
-
-        await inter.response.defer()
+    async def set_saved_post_ids(self):
         posts_per_game = await self._fetch_posts()
         games = await API.fetch_available_games()
         game_ids = [gid for gid in games.values()]
 
-        emb_error = disnake.Embed(title="❌  API Error", colour=14242639)
-        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
-
         if not all([gid in posts_per_game.keys() for gid in game_ids]):
-            emb_error.description = "Couldn't fetch all games. Aborting..."
-            await inter.edit_original_message(embed=emb_error)
-            return
+            logger.error("Couldn't fetch all games. Aborting...")
+            return 'error'
 
         for game_id, posts in posts_per_game.items():
             post_ids = [p['id'] for p in posts]
             logger.info(f"{game_id}: Updating posts state.")
             logger.debug(post_ids)
             await ORM.set_saved_post_ids(game_id, post_ids)
+
+        logger.info("The bot state has been reset.")
+        return 'success'
+
+    @commands.slash_command(name="dt-save-post-ids", description="Update posts state of the Bot.", guild_ids=[984016998084247582, 687999396612407341])
+    @commands.default_member_permissions(manage_guild=True)
+    async def set_current_post_ids(self, inter: disnake.ApplicationCommandInteraction):
+
+        await inter.response.defer()
+
+        emb_error = disnake.Embed(title="❌  API Error", colour=14242639)
+        emb_success = disnake.Embed(title="✅  Success", colour=6076508)
+
+        savingAttempt = await self.set_saved_post_ids()
+        if savingAttempt != 'success':
+            emb_error.description = "Couldn't fetch all games. Aborting..."
+            await inter.edit_original_message(embed=emb_error)
+            return
 
         emb_success.description = "The bot state has been updated."
         await inter.edit_original_message(embed=emb_success)
